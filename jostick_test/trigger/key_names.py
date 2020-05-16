@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 # These constants were borrowed from linux/input.h
 # 축 들의 이름을 알기 위한 변수들
 # 키 맵핑을 위해 사용
