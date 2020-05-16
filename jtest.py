@@ -18,6 +18,7 @@ from fcntl import ioctl
 
 ser = serial.Serial('/dev/serial0',9600)
 
+
 # /dev/input에 있는 js로 시작되는 장치들이 있다면 화면에 출력
 # js0, js1 ... 게임패드나 조이스틱이 이해 해당된다.
 for fn in os.listdir('/dev/input'):

@@ -3,18 +3,25 @@
 import os, struct, array
 from fcntl import ioctl
 
-from key_names import axis_names, button_names
+from .key_names import axis_names, button_names
 
 class JoystickReader():
     def __init__(self):
         self.__num_buttons = None
         self.__num_axes = None
         self.__jsdev = None
+        self.__fn = '/dev/input/js0'
+        self.__dir = '/dev/input'
 
-    def joy_check(self, dir):
-        for fn in os.listdir(dir):
+    def joy_check(self):
+
+        for fn in os.listdir(self.__dir):
             if fn.startswith('js'):
                 print(' /dev/input/%s' %(fn))
+
+        self.__fn = '/dev/input/js0'
+        print('Opening %s...' % self.__fn)
+        jsdev = open(self.__fn, 'rb')
 
     def joy_open(self, dir):
         print('Opening %s...' % dir)

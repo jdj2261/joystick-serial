@@ -1,0 +1,35 @@
+#!/usr/bin/python
+#-*-coding:utf-8-*-
+
+'''
+Created Date: May 15. 2020
+Copyright: UNMAND SOLUTION
+Author: Dae Jong Jin 
+Description: Logitech joystick Serial Main Code
+'''
+
+import sys, os, time, threading
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+from umd_serial import UMDSerial
+
+
+def main():
+    print ("joystick serial v 1.0.0")
+
+    us = UMDSerial()
+    # t = threading.Thread(target = thread_test, args=("thread",thread_cycle))
+    # t.start()
+
+    while True:
+        us.waitPort()
+        pass
+
+
+
+
+    # while True:
+    #     st = UMDSerial()
+    #     time.sleep(1)
+
+if __name__ == '__main__':
+    main()
