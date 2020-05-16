@@ -16,6 +16,7 @@ class UMDSerial():
         self.__joyreader = None
         self.__is_serial_connect = False
         self.__is_joy_connect = False
+        self.__jr = JoystickReader()
 
     
         # self.waitPort()
@@ -23,29 +24,29 @@ class UMDSerial():
 
     def waitPort(self):
 
-        # while(True) : 
+        while(True) : 
             # self.__is_connect = self.open()
 
-        self.__is_serial_connect = self.is_input
-        
-        if self.__is_serial_connect == True :
+            self.__is_serial_connect = self.is_input
             
-            # joy 연결 여부
-            self.__is_joy_connect = self.waitjoy()
+            # 시리얼 연결이 되면
+            if self.__is_serial_connect == True :
+                print("시리얼 연결이 되었습니다.")
+                # joy 연결 여부 확인
+                self.__is_joy_connect = self.waitjoy()
+                # joy 연결이 되면
+                if self.__is_joy_connect == True :
+                    self.triggerjoy()
+                    break
+                else :
+                    print("조이스틱 연결을 확인해 주세요...")
 
-            if self.__is_joy_connect == True :
-                self.triggerjoy()
+                # self.write("1")
+                # break
             else :
-                print("조이스틱 연결을 확인 해 주세요...")
-
-            self.write("1")
-            # break
-        else :
-            print("error")
+                print("연결이 되었는지 확인해 주세요.")
         
-        time.sleep(1.0)
-
-    print("스위치가 연결되었습니다.")
+            time.sleep(1.0)
 
     def open(self):
         try:
@@ -65,7 +66,15 @@ class UMDSerial():
         t.start()
 
     def waitjoy(self):
-        pass
+        # print(" wait joy")
+        while True:
+            print("조이스틱을 연결하세요..")
+            test_str = input("Wait JOY True or False 입력 : ")
+            if test_str.lower() == "true":
+                return True
+                break
+
+        # pass
         # try:
         # joystick 연결되어 있는지 확인
         
@@ -73,22 +82,23 @@ class UMDSerial():
         # joystick trigger 시작
     
     def triggerjoy(self):
-        pass
-        
+        self.__jr.joy_open()
+        self.__jr.joy_read()
+        self.__jr.joy_test()
+
+
 
     def test_input(self):
-        test_str = input("True or False 입력 : ")
-        # test_str = bool(test_str)
-        if test_str.lower() == "true":
-            print("True")
-            self.is_input = True
-            return self.is_input
-        elif test_str.lower() == "false":
-            print("False")
-            self.is_input = False
-            return self.is_input
-        else :
-            print("다시 입력 하세요.")
+        while True:
+            test_str = input("True or False 입력 : ")
+            # test_str = bool(test_str)
+            if test_str.lower() == "true":
+                print("True")
+                self.is_input = True
+                return self.is_input
+                break
+            else :
+                print("다시 입력 하세요.")
 
 
         # thread test 
@@ -102,20 +112,16 @@ if __name__ == "__main__":
 
 
     # us.waitPort()
-    while True:
+    # while True:
         # us.test_input()
         # us.waitPort()
-        t1 = threading.Thread(target = us.waitPort, args="")
-        t1.start()
-        t2 = threading.Thread(target = us.test_input, args="")
-        t2.start()
+    t1 = threading.Thread(target = us.waitPort, args="")
+    t2 = threading.Thread(target = us.test_input, args="")
+
+    t1.start()
+    t2.start()
+
+    # t1.join()
+    # t2.join()
 
         
-
-        # t1.start()
-
-
-        # if us.is_input == True:
-        #     t2.join()
-
-        time.sleep(1)

@@ -11,6 +11,20 @@ Description: Logitech joystick axis, button dictionary
 # These constants were borrowed from linux/input.h
 # 축 들의 이름을 알기 위한 변수들
 # 키 맵핑을 위해 사용
+
+axis_names = {
+    0x00 : 'x',
+    0x01 : 'y',
+    0x02 : 'z',
+    0x123 : 'd'
+}
+
+button_names = {
+    0x10 : 'a',
+    0x11 : 'b',
+}
+
+'''
 axis_names = {
     0x00 : 'x',
     0x01 : 'y',
@@ -155,3 +169,4 @@ test_button_names = {
     0x2c2 : '0x2c2',
     0x2c3 : '0x2c3',
 }
+'''
