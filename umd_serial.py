@@ -3,8 +3,8 @@ import time
 import serial
 import threading
 
-from jostick_test.ums_serial.writer import UMDSerialWriter
-from jostick_test.ums_joystick.key_reader import JoystickReader 
+from src.ums_serial.writer import UMDSerialWriter
+from src.ums_joystick.key_reader import JoystickReader 
 
 
 class UMDSerial():

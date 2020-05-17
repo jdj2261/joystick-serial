@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+'''
+Created Date: May 15. 2020
+Copyright: UNMAND SOLUTION
+Author: Dae Jong Jin 
+Description: Logitech Joystick key reader
+'''
+
 import os, struct, array, time
-import threading
+#import threading
 from fcntl import ioctl
 
 from .key_names import axis_names, button_names
-from jostick_test.ums_serial.writer import UMDSerialWriter
+from src.ums_serial.writer import UMDSerialWriter
 
 class JoystickReader():
 
@@ -195,11 +203,12 @@ class JoystickReader():
                     print(" --- Test ---")
                     # test_input = int(input(" 입력하세요 : "))
                     test_input = 0x01
-                    self.__writer.run(hex(test_input))
+
 
                     self.__jsdev = open(self.__fn, 'rb')
                     if self.__jsdev:
-                        print("조이스틱 체크 성공")
+                        self.__writer.run(hex(test_input))
+                        # print("조이스틱 체크 성공")
                     time.sleep(1)
                         # return True
 
