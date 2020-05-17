@@ -19,10 +19,8 @@ def main():
     us = UMDSerial()
 
     t1 = threading.Thread(target = us.waitPort, args="")
-    t2 = threading.Thread(target = us.test_input, args="")
-
     t1.start()
-    t2.start()
+
 
 if __name__ == '__main__':
     main()

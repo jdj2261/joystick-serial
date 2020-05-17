@@ -14,47 +14,29 @@ import threading
 
 
 class UMDSerialWriter():
-    def __init__(self, serial, send_data):
-        super(UMDSerialWriter, self).__init__()
+    def __init__(self, serial):
         self.__serial = serial
-        self.__send_data = send_data
 
-    def run(self):
-        print("write threading....")
-        # self.__serial.write("1")
-        print(self.__serial)
-        print(self.__send_data)
+    def run(self, send_data):
+        # print(self.__send_data)
+        try:
+            result = send_data
+            self.__serial.write(result.encode('utf-8'))
+            print(result.encode('utf-8'))
+        except:
+            print("시리얼 연결이 끊어졌습니다.")
+            self.reopen()
 
-        # self.__serial.op
-        # self.serial = 0x00
-        # print(self.serial)
+    def reopen(self):
+        try:
+            self.__serial = serial.Serial(
+                port='/dev/opencm',
+                baudrate=9600
+            )
+            print("시리얼이 재 연결되었습니다.")
+
+        except:
+            print(u' 포트를 다시 연결해 주세요')
+        time.sleep(1)
 
 
-
-# if __name__ == "__main__":
-
-#     sw = UMDSerialWriter(0,0)
-#     t = threading.Thread(target = sw.run, args="")
-#     t.start()
-#     time.sleep(1)
-
-#     print("Main Thread")
-
-# from threading import Thread
-
-# def work(id, start, end, result):
-#     total = 0
-#     for i in range(start, end):
-#         total += i
-#     result.append(total)
-#     return
-
-# if __name__ == "__main__":
-#     START, END = 0, 100000000
-#     result = list()
-#     th1 = Thread(target=work, args=(1, START, END, result))
-    
-#     th1.start()
-#     th1.join()
-
-# print("Result: {sum(result)}")

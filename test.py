@@ -10,7 +10,86 @@ git : jdj2261@github.com
 Description: Logitech joystick Serial Test code using raspberry pi 3
 '''
 
-import os, struct, array
+import os, struct, array, serial, time
+from fcntl import ioctl 
+
+# try :
+#     ser = serial.Serial(
+#         port = '/dev/opencm',
+#         baudrate = 9600,
+#     )
+
+# except serial.serialutil.SerialException as e:
+#     print(e)
+
+# # try :
+# #     fn = '/dev/video1'
+# #     print('Opening %s...' % fn)
+# #     jsdev = open(fn, 'rb')
+# # except FileNotFoundError as e:
+# #     print(e)
+
+# number = 4
+# value = 1
+
+# class KeyError(Exception):
+#     def __str__(self):
+#         return "q 입력을 하였습니다."
+
+# class Writer():
+#     def __init__(self, serial, send_data):
+#         self.__serial = serial
+#         self.__send_data = send_data
+
+#     def run(self):
+#         # print(self.__serial)
+#         result = hex(self.__send_data)
+#         self.__serial.write(result.encode('utf-8'))
+#         print(result.encode('utf-8'))
+#         # send_button_data = str(number)
+#         # send_button_value_data = str(value)
+#         # send_data = send_button_data + send_button_value_data
+#         # ser.write(send_data.encode('utf-8'))
+#         # print("sending..")
+
+
+# def reopen():
+#     global ser
+#     try:
+#         ser = serial.Serial(
+#             port='/dev/opencm',
+#             baudrate=9600
+#         )
+#         print("스위치가 재 연결되었습니다.")
+#     except:
+#         print(u' 포트를 다시 연결해 주세요')
+#     time.sleep(1)
+
+# writer_test = Writer(serial=ser, send_data=0x15)
+# while True:
+
+
+#     try : 
+#         writer_test.run()
+#         # send_button_data = str(number)
+#         # send_button_value_data = str(value)
+#         # send_data = send_button_data + send_button_value_data
+#         # ser.write(send_data.encode('utf-8'))
+#         # print("sending..")
+
+#         n = input('입력 : ')
+#         if n == "q":
+#             raise KeyError()
+#     except KeyError as e:
+#         print(e)
+#     except serial.serialutil.SerialException as e:
+#         print("error")
+#         reopen()
+
+
+#     time.sleep(0.1)
+
+
 
 axis_states = {}
 button_states = {}

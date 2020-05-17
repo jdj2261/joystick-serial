@@ -6,6 +6,7 @@ import threading
 from jostick_test.ums_serial.writer import UMDSerialWriter
 from jostick_test.ums_joystick.key_reader import JoystickReader 
 
+
 class UMDSerial():
     
     is_input = False
@@ -16,7 +17,7 @@ class UMDSerial():
         self.__joyreader = None
         self.__is_serial_connect = False
         self.__is_joy_connect = False
-        self.__jr = JoystickReader()
+        
 
     
         # self.waitPort()
@@ -24,10 +25,11 @@ class UMDSerial():
 
     def waitPort(self):
 
-        while(True) : 
-            # self.__is_connect = self.open()
 
-            self.__is_serial_connect = self.is_input
+        # print("시리얼 연결이 되었습니다.")
+        while(True) : 
+            self.__is_serial_connect = self.open()
+            # self.__is_serial_connect = self.is_input
             
             # 시리얼 연결이 되면
             if self.__is_serial_connect == True :
@@ -36,6 +38,7 @@ class UMDSerial():
                 self.__is_joy_connect = self.waitjoy()
                 # joy 연결이 되면
                 if self.__is_joy_connect == True :
+                    # joystick trigger 시작
                     self.triggerjoy()
                     break
                 else :
@@ -44,26 +47,25 @@ class UMDSerial():
                 # self.write("1")
                 # break
             else :
-                print("연결이 되었는지 확인해 주세요.")
+                print("시리얼 연결이 되었는지 확인해 주세요.")
         
             time.sleep(1.0)
 
     def open(self):
         try:
             self.__serial = serial.Serial(
-                port='/dev/serial0',
-                baudrate=9600
+                port='/dev/opencm',
+                baudrate=9600,
+                #port='/dev/serial0',
+                #baudrate=9600,     
             )
+            # print('시리얼 연결이 확인되었습니다.')
         except:
             print(' 포트를 여는 데 실패했습니다.')
            
             return False
         return True
 
-    def write(self, data):
-        self.__writer = UMDSerialWriter(serial=1, send_data = data)
-        t = threading.Thread(target = self.__writer.run, args="")
-        t.start()
 
     def waitjoy(self):
         # print(" wait joy")
@@ -73,6 +75,8 @@ class UMDSerial():
             if test_str.lower() == "true":
                 return True
                 break
+            else:
+                return False
 
         # pass
         # try:
@@ -82,8 +86,14 @@ class UMDSerial():
         # joystick trigger 시작
     
     def triggerjoy(self):
+        self.__jr = JoystickReader(serial=self.__serial)
         self.__jr.joy_open()
         self.__jr.joy_read()
+        # self.__jr.joy_name_read()
+        # self.__jr.axis_read()
+        # self.__jr.button_read()
+        # self.__jr.joy_main_event()
+
         self.__jr.joy_test()
 
 
@@ -116,12 +126,12 @@ if __name__ == "__main__":
         # us.test_input()
         # us.waitPort()
     t1 = threading.Thread(target = us.waitPort, args="")
-    t2 = threading.Thread(target = us.test_input, args="")
+    # t2 = threading.Thread(target = us.test_input, args="")
 
     t1.start()
-    t2.start()
+    # t2.start()
 
-    # t1.join()
+    t1.join()
     # t2.join()
 
         
