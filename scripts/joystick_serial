@@ -17,10 +17,7 @@ def main():
     print ("joystick serial v 1.0.0")
 
     us = UMDSerial()
-
-    t1 = threading.Thread(target = us.waitPort, args="")
-    t1.start()
-
+    us.waitPort()
 
 if __name__ == '__main__':
     main()

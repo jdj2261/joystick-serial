@@ -35,14 +35,14 @@ class UMDSerial():
             if self.__is_serial_connect == True :
                 print("시리얼 연결이 되었습니다.")
                 # joy 연결 여부 확인
-                self.__is_joy_connect = self.waitjoy()
+                # self.__is_joy_connect = self.waitjoy()
                 # joy 연결이 되면
-                if self.__is_joy_connect == True :
+                # if self.__is_joy_connect == True :
                     # joystick trigger 시작
-                    self.triggerjoy()
-                    break
-                else :
-                    print("조이스틱 연결을 확인해 주세요...")
+                self.triggerjoy()
+                break
+                # else :
+                #     print("조이스틱 연결을 확인해 주세요...")
 
                 # self.write("1")
                 # break
@@ -54,7 +54,7 @@ class UMDSerial():
     def open(self):
         try:
             self.__serial = serial.Serial(
-                port='/dev/opencm',
+                port='/dev/usb2ttl',
                 baudrate=9600,
                 #port='/dev/serial0',
                 #baudrate=9600,     
@@ -67,34 +67,33 @@ class UMDSerial():
         return True
 
 
-    def waitjoy(self):
-        # print(" wait joy")
-        while True:
-            print("조이스틱을 연결하세요..")
-            test_str = input("Wait JOY True or False 입력 : ")
-            if test_str.lower() == "true":
-                return True
-                break
-            else:
-                return False
+    # def waitjoy(self):
+    #     # print(" wait joy")
+    #     while True:
+    #         print("조이스틱을 연결하세요..")
+    #         test_str = input("Wait JOY True or False 입력 : ")
+    #         if test_str.lower() == "true":
+    #             return True
+    #             break
+    #         else:
+    #             return False
 
-        # pass
-        # try:
-        # joystick 연결되어 있는지 확인
+    #     # pass
+    #     # try:
+    #     # joystick 연결되어 있는지 확인
         
-        # 연결되었으면
-        # joystick trigger 시작
+    #     # 연결되었으면
+    #     # joystick trigger 시작
     
     def triggerjoy(self):
-        self.__jr = JoystickReader(serial=self.__serial)
-        self.__jr.joy_open()
-        self.__jr.joy_read()
-        # self.__jr.joy_name_read()
-        # self.__jr.axis_read()
-        # self.__jr.button_read()
-        # self.__jr.joy_main_event()
+        jr = JoystickReader(serial=self.__serial)
+        jr.joy_open()
+        jr.joy_name_read()
+        jr.axis_read()
+        jr.button_read()
+        jr.joy_main_event()
 
-        self.__jr.joy_test()
+        # self.__jr.joy_test()
 
 
 
@@ -119,19 +118,18 @@ class UMDSerial():
 if __name__ == "__main__":
     us = UMDSerial()
     print(" -- umd_serial test -- ")
-
-
-    # us.waitPort()
+    us.waitPort()
+    
     # while True:
         # us.test_input()
         # us.waitPort()
-    t1 = threading.Thread(target = us.waitPort, args="")
+    # t1 = threading.Thread(target = us.waitPort, args="")
     # t2 = threading.Thread(target = us.test_input, args="")
 
-    t1.start()
+    # t1.start()
     # t2.start()
 
-    t1.join()
+    # t1.join()
     # t2.join()
 
         

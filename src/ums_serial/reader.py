@@ -11,6 +11,6 @@ Description: Pyserial Read
 import serial
 
 class UMDSerialReader():
-    def __init__(self, serial)
-    pass
+    def __init__(self, serial):
+        pass
 

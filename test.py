@@ -89,8 +89,6 @@ from fcntl import ioctl
 
 #     time.sleep(0.1)
 
-
-
 axis_states = {}
 button_states = {}
 
