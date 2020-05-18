@@ -4,7 +4,7 @@ import struct
 # test1 = struct.pack(">i",22)
 
 # test1 = hex(int(test1.hex(),16))
-# print(test1)
+# #print(test1)
 
 def change_hex(data):
     data = struct.pack(">i",data)
@@ -12,7 +12,7 @@ def change_hex(data):
     return data
 
 result = change_hex(256)
-print(result)
+#print(result)
 
 
 # test2 = struct.pack("i", 1).hex()
@@ -22,11 +22,11 @@ print(result)
 # test = test
 # test = test.encode("utf-8")
 
-# print(test)
+# #print(test)
 # test1 = "asdf".encode("hex")
 # test1 = hex(int(test1,16))
-# print (test1)
+# #print (test1)
 
 # test2 = '0x2'
 # test = int(test1, 16) + int(test2, 16)
-# print (test)
+# #print (test)

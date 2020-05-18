@@ -23,7 +23,7 @@ ser = serial.Serial('/dev/serial0',9600)
 # js0, js1 ... 게임패드나 조이스틱이 이해 해당된다.
 for fn in os.listdir('/dev/input'):
     if fn.startswith('js'):
-        print('  /dev/input/%s' % (fn))
+        #print('  /dev/input/%s' % (fn))
 
 # 축 값 저장 변수
 axis_states = {}
@@ -154,7 +154,7 @@ button_map = []
 # Open the joystick device.
 # /de/inpuyt/js0 장치 열기
 fn = '/dev/input/js0'
-print('Opening %s...' % fn)
+#print('Opening %s...' % fn)
 jsdev = open(fn, 'rb')
 
 # Get the device name.
@@ -166,7 +166,7 @@ buf = array.array('B', [0] * 64)
 # 드라이버로부터 조이스틱 이름 가져오기
 ioctl(jsdev, 0x80006a13 + (0x10000 * len(buf)), buf) # JSIOCGNAME(len)
 js_name = buf.tobytes().rstrip(b'\x00').decode('utf-8') # 0x00 비어있는 값 제거 
-print('Device name: %s' % js_name)
+#print('Device name: %s' % js_name)
 
 # Get number of axes and buttons.
 # 드라이버로부터 축 개수 가져오기
@@ -205,8 +205,8 @@ for btn in buf[:num_buttons]:
     button_map.append(btn_name)
     button_states[btn_name] = 0
 
-print('%d axes found: %s' % (num_axes, ', '.join(axis_map)))
-print('%d buttons found: %s' % (num_buttons, ', '.join(button_map)))
+#print('%d axes found: %s' % (num_axes, ', '.join(axis_map)))
+#print('%d buttons found: %s' % (num_buttons, ', '.join(button_map)))
 
 # Main event loop
 # 키 이벤트 처리
@@ -227,7 +227,7 @@ while True:
 
         # type이 0x80이면 장치 초기 상태이다.
         if type & 0x80:
-             print("(initial)", end="")
+             #print("(initial)", end="")
 
         # type이 0x01 버튼이 눌렸거나 떨어졌을때이다.
         if type & 0x01:
@@ -237,9 +237,9 @@ while True:
                 # 해당 버튼 상태(button_states)에 value 값으로 변경          
                 button_states[button] = value
                 # if value:
-                #     print("%s pressed" % (button))
+                #     #print("%s pressed" % (button))
                 # else:
-                #     print("%s released" % (button))
+                #     #print("%s released" % (button))
 
                 
                 send_button_data = str(number)
@@ -249,9 +249,9 @@ while True:
                 #ser.write(send_button_data.encode('utf-8'))
                 #ser.write(send_button_value_data.encode('utf-8'))
 
-                # print("---test--- {0} \n".format(button_names[]))
+                # #print("---test--- {0} \n".format(button_names[]))
 
-                print("{0} - {1} : \t{2}".format(send_button_data, button, send_button_value_data))
+                #print("{0} - {1} : \t{2}".format(send_button_data, button, send_button_value_data))
 
         # type이 0x02이면 축이 이동한 상태이다.
         if type & 0x02:
@@ -264,7 +264,7 @@ while True:
                 fvalue = value / 32767.0
                 # 상태값(0, 1, -1)을 저장
                 axis_states[axis] = fvalue
-                # print("%s: %.3f" % (axis, fvalue))
+                # #print("%s: %.3f" % (axis, fvalue))
 
 
                 send_axis_data = str(number)
@@ -272,7 +272,7 @@ while True:
                 ser.write(send_axis_data.encode('utf-8'))
                 ser.write(send_axis_value_data.encode('utf-8'))
 
-                print("{0} - {1} : \t{2}".format(send_axis_data, axis, send_axis_value_data))
+                #print("{0} - {1} : \t{2}".format(send_axis_data, axis, send_axis_value_data))
 
     
         # send_data = '2'
@@ -289,16 +289,16 @@ while True:
     # try:
     # # ser.write(bytes(bytearray([0x01,0x02])))
     # # response = ser.readline()
-    # # print(str(response))
+    # # #print(str(response))
     #     send_data = '2'
     #     ser.write(bytes(send_data.encode()))
         
     #     # send_data = bytearray([0x01,0x02])
     #     # ser.write(bytes(send_data))
         
-    #     print("send Msg : {0}".format(send_data))
+    #     #print("send Msg : {0}".format(send_data))
         
     #     # time.sleep(1)
     # except KeyboardInterrupt:
     #     ser.close()
-    #     print("ctrl + c pressed..")
+    #     #print("ctrl + c pressed..")
