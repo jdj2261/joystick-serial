@@ -121,37 +121,37 @@ num_buf = 3
 for axis in buf[:num_buf] :
 
     axis_name = axis_names.get(axis,'unknown')
-    #print("axis : {0}, axis_name: {1}".format(hex(axis), axis_name))
+    print("axis : {0}, axis_name: {1}".format(hex(axis), axis_name))
     axis_map.append(axis_name)
     tmp_axis_map.append(hex(axis))
     axis_states[hex(axis)] = 0.0
-    # #print("{0}".format(axis_name))
+    #print("{0}".format(axis_name))
 
-#print("axis_map : {0}".format(', '.join(axis_map)))
-#print("tmp_axis_map : {0}".format(', '.join(tmp_axis_map)))
-#print("axis_states : {0}".format(axis_states))
+print("axis_map : {0}".format(', '.join(axis_map)))
+print("tmp_axis_map : {0}".format(', '.join(tmp_axis_map)))
+print("axis_states : {0}".format(axis_states))
 
 
 try :
     while True :
         
         try:
-            #print(" --- Test ---")
+            print(" --- Test ---")
             test_input = input(" 입력하세요 : ")
             test_input = hex(int(test_input, 16))
-            #print(test_input)
+            print(test_input)
 
             if test_input in tmp_axis_map :
                 pass
                 # #print(tmp_axis_map[1])
                 
             else :
-                #print(" 존재하지 않습니다..")
+                print(" 존재하지 않습니다..")
             
         except ValueError :
-            #print("잘못된 입력입니다.")
+            print("잘못된 입력입니다.")
 
         
 except KeyboardInterrupt as e:
-    #print(" ctrl + c pressed !!")
-    #print("exit .. ")
+    print(" ctrl + c pressed !!")
+    print("exit .. ")
