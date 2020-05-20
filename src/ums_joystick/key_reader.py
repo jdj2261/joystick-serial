@@ -11,12 +11,13 @@ Description: Logitech Joystick key reader
 import os, struct, array
 from time import sleep
 #import threading
-from fcntl import ioctl
 
-from .key_names import axis_names, button_names, origin_axis_names, origin_button_names
+
+from .names import axis_names, button_names, origin_axis_names, origin_button_names
+from .protocol import PacketProtocol
 from src.ums_serial.writer import UMDSerialWriter
 
-class JoystickReader():
+class JoystickReader(object):
 
     axis_states = {}
     button_states = {}  
@@ -33,6 +34,19 @@ class JoystickReader():
     end_bit   = "0x11"
 
     def __init__(self,serial):
+
+        # try:
+        #     from fcntl import ioctl
+        # except ModuleNotFoundError:
+        #     self.num_axes = 0
+        #     self.num_buttons = 0
+        #     print("no support for fnctl module. joystick not enabled.")
+        #     return
+
+        # if not os.path.exists(self.dev_fn):
+        #     print(self.dev_fn, "is missing")
+        #     return
+
         self.__serial = serial
         self.__num_buttons = None
         self.__num_axes = None
@@ -40,6 +54,7 @@ class JoystickReader():
         self.__fn = '/dev/input/js0'
         self.__dir = '/dev/input'
         self.__writer = UMDSerialWriter(serial=self.__serial)
+        self.__protocol = PacketProtocol()
 
     def joy_check(self):
 
@@ -106,7 +121,6 @@ class JoystickReader():
             # 예를들어 axis가 0이면 axis_names에서 0x00 > 'x'를 가져오고
             # axis가 1이면 axis_names에 0x01 > 'y'를 가져오기 된다.
             axis_name = axis_names.get(axis, 'unknown(0x%02x)' % axis)
-
             self.axis_map.append(axis_name)
             self.axis_states[axis_name] = 0.0
 
@@ -114,6 +128,7 @@ class JoystickReader():
             self.origin_axis_map.append(origin_axis_name)
             self.origin_axis_states[origin_axis_name] = 0.0
 
+            
     def button_read(self):
         # 드라이버로부터 버튼 개수 가져오기
         buf = array.array('B', [0])
@@ -128,21 +143,28 @@ class JoystickReader():
 
         for btn in buf[:num_buttons]:
             btn_name = button_names.get(btn, 'unknown(0x%03x)' % btn)
-            origin_btn_name = origin_button_names.get(btn, 'unknown(0x%03x)' % btn)
-
             self.button_map.append(btn_name)
             self.button_states[btn_name] = 0
 
+            origin_btn_name = origin_button_names.get(btn, 'unknown(0x%03x)' % btn)
             self.origin_button_map.append(origin_btn_name)
             self.origin_button_states[origin_btn_name] = 0
 
     def joy_main_event(self):
         # Main event loop
         # 키 이벤트 처리
+        button = None
+        button_state = None
+        axis = None
+        axis_val = None
+
         while True:
             # 키 읽기 블록 상태(Block) 
             # 키 입력이 들어오기 전까지 무조건 대기
             try:
+                if self.jsdev is None:
+                    return button, button_state, axis, axis_val
+
                 evbuf = self.__jsdev.read(8)
                 # 이벤트가 발생했다면
                 if evbuf:
@@ -151,29 +173,36 @@ class JoystickReader():
 
                     # type이 0x80이면 장치 초기 상태이다.
                     if type & 0x80:
-                        pass
-                        print("(initial)", end="")
+                        return button, button_state, axis, axis_val
+                        # print("(initial)", end="")
 
                     # type이 0x01 버튼이 눌렸거나 떨어졌을때이다.
                     if type & 0x01:
                         # number 값으로 해당 버튼 이름 가져오기
                         button = self.button_map[number]
-                        if button:
-                            # 해당 버튼 상태(button_states)에 value 값으로 변경          
-                            self.button_states[button] = value
-                            #if value:
-                                print("{0} {1} \t".format(button,value), end="")
-                            #else:
-                                print("{0} {1} \t".format(button,value), end="")
+                        result_button = self.compare_button_data(button)
+
+                        
+
+                        # if button:
+                        #     # 해당 버튼 상태(button_states)에 value 값으로 변경          
+                        #     self.button_states[button] = value
+                            button_state = value
+                            # #if value:
+                            #     print("{0} {1} \t".format(button,value), end="")
+                            # #else:
+                            #     print("{0} {1} \t".format(button,value), end="")
+
+
 
                         origin_button = self.origin_button_map[number]
                         if origin_button:
                             self.origin_button_states[origin_button] = value
                             print("Change --> ", end="")
-                            #if value:
-                                print("%s pressed " % (origin_button), end="")
-                            #else:
-                                print("%s released " % (origin_button), end="")
+                            # #if value:
+                            #     print("%s pressed " % (origin_button), end="")
+                            # #else:
+                            #     print("%s released " % (origin_button), end="")
 
                         
                         packet_header = str(button)
@@ -192,10 +221,11 @@ class JoystickReader():
                             # 값을 32767로 나눠서 0 또는 1, -1 로 표시
                             # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
                             # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
-                            self.change_hex(value)
+                            # self.change_hex(value)
                             # fvalue = value
                             # 상태값(0, 1, -1)을 저장
                             self.axis_states[axis] = value
+                            axis_val = value
                             print("%s: %.3f \t" % (axis, value), end="")
 
                         origin_axis = self.origin_axis_map[number]
@@ -212,7 +242,8 @@ class JoystickReader():
                         send_packet = packet_data + "#"
                         # print("\tSerial --> {0}\t".format(send_packet), end="")
                         self.__writer.run(send_packet)
-                sleep(0.02)
+                
+                sleep(0.05) # 20Hz
 
             except OSError:
                 self.reconect()
@@ -243,6 +274,23 @@ class JoystickReader():
         data = hex(int(data.hex(),16))
         # print(data)
         return data
+    
+    def compare_button_data(self, data):
+        buttons = {
+            'tl'        :'OFF', 
+            'tl2'       :'ON', 
+            'tr'        :'OFF', 
+            'tr2'       :'ON',
+            'dpad_up'   :'GFORWARD', 
+            'dpad_down' :'GBACKWARD',
+            'dpad_left' :'GNEUTRAL',
+            'dpad_right':'GNEUTRAL',
+            'a'         :'WFORWARD', 
+            'c'         :'WBACKWARD',
+            'x'         :'WFOURTH',
+        }         
+        return buttons.get(data,"Invalid button")
+
 
 
     # def joy_test(self):

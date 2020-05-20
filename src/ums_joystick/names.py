@@ -69,26 +69,26 @@ origin_button_names = {
     0x12a : 'base5',
     0x12b : 'base6',
     0x12f : 'dead',
-    0x130 : 'a',
-    0x131 : 'b',
-    0x132 : 'c',
-    0x133 : 'x',
-    0x134 : 'y',
+    0x130 : 'a',    # 네모
+    0x131 : 'b',    
+    0x132 : 'c',    # 동그라미
+    0x133 : 'x',    # 세모
+    0x134 : 'y', 
     0x135 : 'z',
-    0x136 : 'tl',
-    0x137 : 'tr',
-    0x138 : 'tl2',
-    0x139 : 'tr2',
+    0x136 : 'tl',   # L1
+    0x137 : 'tr',   # R1
+    0x138 : 'tl2',  # L2 
+    0x139 : 'tr2',  # R2
     0x13a : 'select',
     0x13b : 'start',
     0x13c : 'mode',
     0x13d : 'thumbl',
     0x13e : 'thumbr',
 
-    0x220 : 'dpad_up',
-    0x221 : 'dpad_down',
-    0x222 : 'dpad_left',
-    0x223 : 'dpad_right',
+    0x220 : 'dpad_up',      #
+    0x221 : 'dpad_down',    
+    0x222 : 'dpad_left',    #
+    0x223 : 'dpad_right',   #
 
     # XBox 360 controller uses these codes.
     0x2c0 : 'dpad_left',
