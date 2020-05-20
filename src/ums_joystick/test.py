@@ -5,7 +5,7 @@ from key_reader import *
 dev_directory = '/dev/input'
 fn = '/dev/video0'
 if __name__ == "__main__":
-    #print("start")
+    print("start")
     jr = JoystickReader()
 
     jr.joy_check()

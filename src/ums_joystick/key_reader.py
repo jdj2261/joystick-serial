@@ -44,26 +44,26 @@ class JoystickReader():
     def joy_check(self):
 
         try:
-            #print('Opening %s...' % self.__fn)
+            print('Opening %s...' % self.__fn)
             self.__jsdev = open(self.__fn, 'rb')
 
             if self.__jsdev:
-                #print("조이스틱 체크 성공")
+                print("조이스틱 체크 성공")
                 return True
         except:
-            #print("조이스틱 체크 실패")
+            print("조이스틱 체크 실패")
             return False
 
     def joy_open(self):
-        #print("조이스틱의 접속을 확인하는 중입니다.")
+        print("조이스틱의 접속을 확인하는 중입니다.")
         while True:
             is_open = self.joy_check()
             if is_open == True:
-                #print("조이스틱을 불러옵니다.")
+                print("조이스틱을 불러옵니다.")
                 break
             time.sleep(1.0)
-        # #print("Opening ")
-            # #print('Opening %s...' % dir)
+        # print("Opening ")
+            # print('Opening %s...' % dir)
             # self.__jsdev = open(dir, 'rb')
 
 
@@ -73,21 +73,21 @@ class JoystickReader():
 
     #     for axis in buf[:num_buf]:
     #         axis_name = axis_names.get(axis, 'unknown')
-    #         #print("axis : {0}, axis_name: {1}".format(hex(axis), axis_name))
+    #         print("axis : {0}, axis_name: {1}".format(hex(axis), axis_name))
     #         self.axis_map.append(axis_name)
     #         self.tmp_axis_map.append(hex(axis))
     #         self.axis_states[hex(axis)] = 0.0
 
-    #     #print("axis_map : {0}".format(', '.join(self.axis_map)))
-    #     # #print("tmp_axis_map : {0}".format(', '.join(self.tmp_axis_map)))
-    #     #print("axis_states : {0}".format(self.axis_states))
+    #     print("axis_map : {0}".format(', '.join(self.axis_map)))
+    #     # print("tmp_axis_map : {0}".format(', '.join(self.tmp_axis_map)))
+    #     print("axis_states : {0}".format(self.axis_states))
 
     def joy_name_read(self):
         buf = array.array('B', [0] * 64)
         # 드라이버로부터 조이스틱 이름 가져오기
         ioctl(self.__jsdev, 0x80006a13 + (0x10000 * len(buf)), buf) # JSIOCGNAME(len)
         js_name = buf.tobytes().rstrip(b'\x00').decode('utf-8') # 0x00 비어있는 값 제거 
-        #print('Device name: %s' % js_name)
+        print('Device name: %s' % js_name)
 
     def axis_read(self):
         # 드라이버로부터 축 개수 가져오기
@@ -152,7 +152,7 @@ class JoystickReader():
                     # type이 0x80이면 장치 초기 상태이다.
                     if type & 0x80:
                         pass
-                        #print("(initial)", end="")
+                        print("(initial)", end="")
 
                     # type이 0x01 버튼이 눌렸거나 떨어졌을때이다.
                     if type & 0x01:
@@ -162,25 +162,25 @@ class JoystickReader():
                             # 해당 버튼 상태(button_states)에 value 값으로 변경          
                             self.button_states[button] = value
                             #if value:
-                                #print("{0} {1} \t".format(button,value), end="")
+                                print("{0} {1} \t".format(button,value), end="")
                             #else:
-                                #print("{0} {1} \t".format(button,value), end="")
+                                print("{0} {1} \t".format(button,value), end="")
 
                         origin_button = self.origin_button_map[number]
                         if origin_button:
                             self.origin_button_states[origin_button] = value
-                            #print("Change --> ", end="")
+                            print("Change --> ", end="")
                             #if value:
-                                #print("%s pressed " % (origin_button), end="")
+                                print("%s pressed " % (origin_button), end="")
                             #else:
-                                #print("%s released " % (origin_button), end="")
+                                print("%s released " % (origin_button), end="")
 
                         
                         packet_header = str(button)
                         packet_data = str(self.change_hex(value))
                         # send_packet = self.start_bit + "#" + packet_header + "#" + packet_data + "#" + self.end_bit + "#"
                         send_packet = packet_data + "#"
-                        #print("\tSerial --> {0}\t".format(send_packet), end="")
+                        print("\tSerial --> {0}\t".format(send_packet), end="")
                         self.__writer.run(send_packet)
 
                      
@@ -196,21 +196,21 @@ class JoystickReader():
                             # fvalue = value
                             # 상태값(0, 1, -1)을 저장
                             self.axis_states[axis] = value
-                            #print("%s: %.3f \t" % (axis, value), end="")
+                            print("%s: %.3f \t" % (axis, value), end="")
 
                         origin_axis = self.origin_axis_map[number]
                         if origin_axis:
-                            #print("Change --> ", end="")
+                            print("Change --> ", end="")
                             fvalue = value / 32767
                             # 상태값(0, 1, -1)을 저장
                             self.origin_axis_states[origin_axis] = fvalue
-                            # #print("%s: %.3f" % (origin_axis, fvalue), end="")
+                            # print("%s: %.3f" % (origin_axis, fvalue), end="")
 
                         packet_header = str(axis)
                         packet_data = str(self.change_hex(value))
                         # send_packet = self.start_bit + "," + packet_header + ","+ packet_data + "," + self.end_bit + ","
                         send_packet = packet_data + "#"
-                        # #print("\tSerial --> {0}\t".format(send_packet), end="")
+                        # print("\tSerial --> {0}\t".format(send_packet), end="")
                         self.__writer.run(send_packet)
                 sleep(0.02)
 
@@ -218,30 +218,30 @@ class JoystickReader():
                 self.reconect()
 
             except KeyboardInterrupt:
-                #print(" ctrl + c pressed !!")
-                #print("exit .. ")
+                print(" ctrl + c pressed !!")
+                print("exit .. ")
                 exit(0)
             
     def reconect(self):
-        # #print("test")
+        # print("test")
         try:
-            #print("조이스틱을 재 연결합니다.")
-            #print('Opening %s...' % self.__fn)
+            print("조이스틱을 재 연결합니다.")
+            print('Opening %s...' % self.__fn)
             self.__jsdev = open(self.__fn, 'rb')
 
             if self.__jsdev:
-                #print("조이스틱 체크 성공")
+                print("조이스틱 체크 성공")
                 return True
         
         except:
             pass
-            #print("조이스틱을 다시 연결하세요..")
+            print("조이스틱을 다시 연결하세요..")
         time.sleep(1)
 
     def change_hex(self, data):
         data = struct.pack(">i",data)
         data = hex(int(data.hex(),16))
-        # #print(data)
+        # print(data)
         return data
 
 
@@ -250,7 +250,7 @@ class JoystickReader():
     #         while True :
                 
     #             try:
-    #                 #print(" --- Test ---")
+    #                 print(" --- Test ---")
     #                 # test_input = int(input(" 입력하세요 : "))
     #                 test_input = 0x01
 
@@ -258,30 +258,30 @@ class JoystickReader():
     #                 self.__jsdev = open(self.__fn, 'rb')
     #                 if self.__jsdev:
     #                     self.__writer.run(hex(test_input))
-    #                     # #print("조이스틱 체크 성공")
+    #                     # print("조이스틱 체크 성공")
     #                 time.sleep(1)
     #                     # return True
 
     #                 # if test_input in self.tmp_axis_map :
     #                 #     pass
-    #                 #     # #print(tmp_axis_map[1])
+    #                 #     # print(tmp_axis_map[1])
                         
     #                 # else :
-    #                 #     #print(" 존재하지 않습니다..")
+    #                 #     print(" 존재하지 않습니다..")
     #             except ValueError :
-    #                 #print("잘못된 입력입니다.")
+    #                 print("잘못된 입력입니다.")
     #             except FileNotFoundError :
-    #                 #print("조이스틱 연결이 끊어졌습니다.")
+    #                 print("조이스틱 연결이 끊어졌습니다.")
     #                 try:
     #                     self.__jsdev = open(self.__fn, 'rb')
-    #                     #print("조이스틱 재 연결되었습니다.")
+    #                     print("조이스틱 재 연결되었습니다.")
     #                 except:
-    #                     #print("조이스틱을 다시 연결해 주세요")
+    #                     print("조이스틱을 다시 연결해 주세요")
     #                 time.sleep(1)
 
     #     except KeyboardInterrupt as e:
-    #         #print(" ctrl + c pressed !!")
-    #         #print("exit .. ")
+    #         print(" ctrl + c pressed !!")
+    #         print("exit .. ")
 
 
     # threading

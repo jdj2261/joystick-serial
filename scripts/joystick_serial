@@ -14,7 +14,7 @@ from umd_serial import UMDSerial
 
 
 def main():
-    #print ("joystick serial v 1.0.0")
+    print ("joystick serial v 1.0.0")
 
     us = UMDSerial()
     us.waitPort()

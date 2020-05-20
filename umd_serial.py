@@ -26,14 +26,14 @@ class UMDSerial():
     def waitPort(self):
 
 
-        # #print("시리얼 연결이 되었습니다.")
+        # print("시리얼 연결이 되었습니다.")
         while(True) : 
             self.__is_serial_connect = self.open()
             # self.__is_serial_connect = self.is_input
             
             # 시리얼 연결이 되면
             if self.__is_serial_connect == True :
-                #print("시리얼 연결이 되었습니다.")
+                print("시리얼 연결이 되었습니다.")
                 # joy 연결 여부 확인
                 # self.__is_joy_connect = self.waitjoy()
                 # joy 연결이 되면
@@ -42,13 +42,13 @@ class UMDSerial():
                 self.triggerjoy()
                 break
                 # else :
-                #     #print("조이스틱 연결을 확인해 주세요...")
+                #     print("조이스틱 연결을 확인해 주세요...")
 
                 # self.write("1")
                 # break
             else :
                 pass
-                #print("시리얼 연결이 되었는지 확인해 주세요.")
+                print("시리얼 연결이 되었는지 확인해 주세요.")
         
             time.sleep(1.0)
 
@@ -60,18 +60,18 @@ class UMDSerial():
                 #port='/dev/serial0',
                 #baudrate=9600,     
             )
-            # #print('시리얼 연결이 확인되었습니다.')
+            # print('시리얼 연결이 확인되었습니다.')
         except:
-            #print(' 포트를 여는 데 실패했습니다.')
+            print(' 포트를 여는 데 실패했습니다.')
            
             return False
         return True
 
 
     # def waitjoy(self):
-    #     # #print(" wait joy")
+    #     # print(" wait joy")
     #     while True:
-    #         #print("조이스틱을 연결하세요..")
+    #         print("조이스틱을 연결하세요..")
     #         test_str = input("Wait JOY True or False 입력 : ")
     #         if test_str.lower() == "true":
     #             return True
@@ -103,13 +103,13 @@ class UMDSerial():
             test_str = input("True or False 입력 : ")
             # test_str = bool(test_str)
             if test_str.lower() == "true":
-                #print("True")
+                print("True")
                 self.is_input = True
                 return self.is_input
                 break
             else :
                 pass
-                #print("다시 입력 하세요.")
+                print("다시 입력 하세요.")
 
 
         # thread test 
@@ -119,7 +119,7 @@ class UMDSerial():
 
 if __name__ == "__main__":
     us = UMDSerial()
-    #print(" -- umd_serial test -- ")
+    print(" -- umd_serial test -- ")
     us.waitPort()
     
     # while True:
