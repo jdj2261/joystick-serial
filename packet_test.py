@@ -31,13 +31,13 @@ except serial.serialutil.SerialException as e:
     print(e)
 
 ESTOP = {'PRESSED' : 0x00, 'PUSH' : 0x01 }
-GEER = [0x00, 0x01, 
-WHEEL = 0x00
-ALIVE = 0x00
-CHECKSUM = 0x00
+# GEER = [0x00, 0x01, 
+# WHEEL = 0x00
+# ALIVE = 0x00
+# CHECKSUM = 0x00
 
 speed_data = 1024
-steer_data = 1024
+steer_data = -1024
 speed_data = speed_data.to_bytes(2, byteorder="little")
 steer_data = steer_data.to_bytes(2, byteorder="little")
 

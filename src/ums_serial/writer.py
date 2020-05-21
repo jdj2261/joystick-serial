@@ -24,7 +24,7 @@ class UMDSerialWriter():
             # list -> bytes 
             self.__serial.write(serial.to_bytes(result))        
             # self.__serial.write(result.encode('utf-8'))
-            print("\tSend ---> {0} ".format(result.encode('utf-8')))
+            # print("\tSend ---> {0} ".format(result.encode('utf-8')))
         except:
             print("시리얼 연결이 끊어졌습니다.")
             self.reopen()

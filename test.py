@@ -125,11 +125,6 @@ for axis in buf[:num_buf] :
     axis_map.append(axis_name)
     tmp_axis_map.append(hex(axis))
     axis_states[hex(axis)] = 0.0
-<<<<<<< HEAD
-    # print("{0}".format(axis_name))
-=======
-    #print("{0}".format(axis_name))
->>>>>>> 6e2206ab01133be908b3d83b508b6e46d1b9bbb9
 
 print("axis_map : {0}".format(', '.join(axis_map)))
 print("tmp_axis_map : {0}".format(', '.join(tmp_axis_map)))

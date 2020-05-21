@@ -49,47 +49,90 @@ class PacketProtocol(object):
         self.ETX0        = 0x0D
         self.ETX1        = 0x0A
 
-    def makepacket(self):
+    def makepacket(self, ESTOPMODE='OFF', GEARMODE='GNEUTRAL', WHEELMODE='WFOURTH'):
         self.packet[0]   = self.S
         self.packet[1]   = self.T 
         self.packet[2]   = self.X       
-        self.packet[3]   = self.ESTOP.get('OFF')
-        self.packet[4]   = self.GEAR.get('GBACKWARD')
-        self.packet[5]   = self.WHEEL.get('WFOURTH')
+        self.packet[3]   = self.ESTOP.get(ESTOPMODE)
+        self.packet[4]   = self.GEAR.get(GEARMODE)
+        self.packet[5]   = self.WHEEL.get(WHEELMODE)
         self.packet[6]   = self.speed_data[0]
         self.packet[7]   = self.speed_data[1]
         self.packet[8]   = self.steer_data[0]
         self.packet[9]   = self.steer_data[1]
         self.packet[10]  = self.ALIVE
-        self.packet[11]  = self.CHECKSUM
+        self.packet[11]  = self.calc_checksum(self.packet[3:10])
         self.packet[12]  = self.ETX0
         self.packet[13]  = self.ETX1
 
         return self.packet
 
+
+    def calc_checksum(self, data ):
+        result = data
+        # print(data) 
+        sum = 0
+        for i in data:
+            sum = sum + i
+        sum = -(sum % 256)
+        checksum = sum & 0xFF
+        return checksum
+
+    def count_alive(self):
+        self.ALIVE += 1
+        if self.ALIVE >= 256 :
+            self.ALIVE = 0
+        
+
+        
+
 if __name__ == "__main__":
     pt = PacketProtocol()
 
-    print(pt.GEAR['GBACKWARD'])
-    pt.GEAR['GNEUTRAL'] = 0x05
-    print(pt.GEAR['GBACKWARD'])
+    # speed_data = -1254
+    # steer_data = -1
+    # speed_data = speed_data.to_bytes(2, byteorder="little", signed=True)
+    # steer_data = steer_data.to_bytes(2, byteorder="little", signed=True)
 
-    print(pt.packet[4])
-    print(pt.makepacket())
+    # pt.steer_data[0] = steer_data[0]
+    # pt.steer_data[1] = steer_data[1]
+    # pt.speed_data[0] = speed_data[0]
+    # pt.speed_data[1] = speed_data[1]
+    # # print(pt.makepacket(WHEELMODE='WBACKWARD'))
 
+    # result = pt.makepacket()
+    # test = sum(result[3:10])
+    # checksum = pt.calc_checksum(result[3:10])
+    # print(hex(test+checksum))
 
     # pt.packet[4] = pt.GEAR['GBACKWARD']
     # pt.WHEEL = pt.WHEEL
 
-    # while True:
-    #     print('{0:02x}'.format(pt.ALIVE))
-    #     print(pt.makepacket())
-    #     pt.ALIVE += 1
+    while True:
 
-    #     if pt.ALIVE >= 256 :
-    #         pt.ALIVE = 0
+        speed_data = -1254
+        steer_data = -1
+        speed_data = speed_data.to_bytes(2, byteorder="little", signed=True)
+        steer_data = steer_data.to_bytes(2, byteorder="little", signed=True)
 
-    #     sleep(0.05)
+        pt.steer_data[0] = steer_data[0]
+        pt.steer_data[1] = steer_data[1]
+        pt.speed_data[0] = speed_data[0]
+        pt.speed_data[1] = speed_data[1]
+        # print(pt.makepacket(WHEELMODE='WBACKWARD'))
+
+        result = pt.makepacket()
+        test = sum(result[3:10])
+        checksum = pt.calc_checksum(result[3:10])
+        print(hex(test+checksum))
+        print('{0:02x}'.format(pt.ALIVE))
+        print(pt.makepacket(WHEELMODE='WBACKWARD'))
+        pt.count_alive()
+        sleep(0.05)
+
+
+
+# print calc_checksum('00300005000')
 
     # print(pt.packet)
     # print(pt.makepacket())
