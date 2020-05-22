@@ -83,35 +83,33 @@ class PacketProtocol(object):
         if self.ALIVE >= 256 :
             self.ALIVE = 0
         
+# if __name__ == "__main__":
+#     pt = PacketProtocol()
 
-        
+#     while True:
 
-if __name__ == "__main__":
-    pt = PacketProtocol()
+#         speed_data = -1253
+#         steer_data = -1
+#         speed_data = speed_data.to_bytes(2, byteorder="little", signed=True)
+#         steer_data = steer_data.to_bytes(2, byteorder="little", signed=True)
 
-    while True:
+#         pt.steer_data[0] = steer_data[0]
+#         pt.steer_data[1] = steer_data[1]
+#         pt.speed_data[0] = speed_data[0]
+#         pt.speed_data[1] = speed_data[1]
 
-        speed_data = -1254
-        steer_data = -1
-        speed_data = speed_data.to_bytes(2, byteorder="little", signed=True)
-        steer_data = steer_data.to_bytes(2, byteorder="little", signed=True)
+#         pt.count_alive()
+#         # print('{0:02x}'.format(pt.ALIVE))
+#         result = pt.makepacket(WHEELMODE='WBACKWARD')
+#         print(result)
+#         test = sum(result[3:10])
+#         checksum = pt.calc_checksum(result[3:10])
+#         check_checksum = test + checksum
+#         check_checksum = check_checksum & 0xFF
+#         # test ="0x{:02x}".format(check_checksum)
 
-        pt.steer_data[0] = steer_data[0]
-        pt.steer_data[1] = steer_data[1]
-        pt.speed_data[0] = speed_data[0]
-        pt.speed_data[1] = speed_data[1]
-
-        pt.count_alive()
-        # print('{0:02x}'.format(pt.ALIVE))
-        result = pt.makepacket(WHEELMODE='WBACKWARD')
-        print(result)
-        test = sum(result[3:10])
-        checksum = pt.calc_checksum(result[3:10])
-        check_checksum = test + checksum
-        # test ="0x{:02x}".format(check_checksum)
-
-        print("0x{:01x}".format(check_checksum))       
-        sleep(0.05)
+#         print("0x{:02x}".format(check_checksum))       
+#         sleep(0.05)
 
 
 

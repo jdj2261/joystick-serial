@@ -164,21 +164,21 @@ class JoystickReader(object):
                             # 누른 버튼의 정보를 가져옴
                             print(result_button)
                             
-                            if result_button = 'OFF' :
+                            if result_button == 'OFF' :
                                 self.__ESTOP = 'OFF'
-                            elif result_button = 'ON' :
+                            elif result_button == 'ON' :
                                 self.__ESTOP = 'ON'
-                            elif result_button = 'GFORWARD':
+                            elif result_button == 'GFORWARD':
                                 self.__GEAR = 'GFORWARD'
-                            elif result_button = 'GNEUTRAL':
+                            elif result_button == 'GNEUTRAL':
                                 self.__GEAR = 'GNEUTRAL'
-                            elif result_button = 'GBACKWARD':
+                            elif result_button == 'GBACKWARD':
                                 self.__GEAR = 'GBACKWARD'
-                            elif result_button = 'WFORWARD':
+                            elif result_button == 'WFORWARD':
                                 self.__WHEEL = 'WFORWARD'
-                            elif result_button = 'WFOURTH':
+                            elif result_button == 'WFOURTH':
                                 self.__WHEEL = 'WFOURTH'                        
-                            elif result_button = 'WBACKWARD':
+                            elif result_button == 'WBACKWARD':
                                 self.__WHEEL = 'WBACKWARD'
 
                         origin_button = self.origin_button_map[number]
