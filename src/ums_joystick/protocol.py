@@ -39,9 +39,6 @@ class PacketProtocol(object):
         self.S           = 0x53
         self.T           = 0x54
         self.X           = 0x58
-        # self.ESTOP       = self.ESTOP['OFF']
-        # self.GEAR        = self.GEAR['GNEUTRAL']
-        # self.WHEEL       = self.WHEEL['WFOURTH']
         self.speed_data  = [0x00,0x00]
         self.steer_data  = [0x00,0x00]
         self.ALIVE       = 0x00
@@ -66,7 +63,6 @@ class PacketProtocol(object):
         self.packet[13]  = self.ETX1
 
         return self.packet
-
 
     def calc_checksum(self, data ):
         result = data
@@ -102,19 +98,16 @@ class PacketProtocol(object):
 #         # print('{0:02x}'.format(pt.ALIVE))
 #         result = pt.makepacket(WHEELMODE='WBACKWARD')
 #         print(result)
-#         test = sum(result[3:10])
-#         checksum = pt.calc_checksum(result[3:10])
-#         check_checksum = test + checksum
-#         check_checksum = check_checksum & 0xFF
+#         # test = sum(result[3:10])
+#         # checksum = pt.calc_checksum(result[3:10])
+#         # check_checksum = test + checksum
+#         # check_checksum = check_checksum & 0xFF
 #         # test ="0x{:02x}".format(check_checksum)
 
-#         print("0x{:02x}".format(check_checksum))       
+#         # print("0x{:02x}".format(check_checksum))       
 #         sleep(0.05)
 
 
-
-# print calc_checksum('00300005000')
-
-    # print(pt.packet)
-    # print(pt.makepacket())
+#         # print(pt.packet)
+#         # print(pt.makepacket())
 
