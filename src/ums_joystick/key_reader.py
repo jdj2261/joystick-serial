@@ -78,7 +78,7 @@ class JoystickReader(object):
             if is_open == True:
                 print("조이스틱을 불러옵니다.")
                 break
-            time.sleep(1.0)
+            sleep(1.0)
 
     def joy_name_read(self):
         # 드라이버로부터 조이스틱 이름 가져오기
