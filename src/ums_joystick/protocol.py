@@ -45,7 +45,6 @@ class PacketProtocol(object):
         self.CHECKSUM    = 0x00
         self.ETX0        = 0x0D
         self.ETX1        = 0x0A
-        self.t = 0
 
     def makepacket(self, ESTOPMODE='OFF', GEARMODE='GNEUTRAL', WHEELMODE='WFOURTH'):
         self.packet[0]   = self.S
@@ -54,7 +53,7 @@ class PacketProtocol(object):
         self.packet[3]   = self.ESTOP.get(ESTOPMODE)
         self.packet[4]   = self.GEAR.get(GEARMODE)
         self.packet[5]   = self.WHEEL.get(WHEELMODE)
-        self.packet[6]   = self.t
+        self.packet[6]   = self.speed_data[0]
         self.packet[7]   = self.speed_data[1]
         self.packet[8]   = self.steer_data[0]
         self.packet[9]   = self.steer_data[1]
