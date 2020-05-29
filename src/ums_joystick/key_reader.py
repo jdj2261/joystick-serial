@@ -20,10 +20,8 @@ class JoystickReader(object):
 
     axis_states = {}
     button_states = {}  
-    # tmp_axis_map = []
     axis_map = []
     button_map = []
-
     origin_axis_states = {}
     origin_button_states = {}  
     origin_axis_map = []
