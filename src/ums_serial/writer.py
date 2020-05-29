@@ -9,7 +9,7 @@ Description: Pyserial Write
 '''
 
 import serial
-import time
+from time import sleep
 
 class UMDSerialWriter():
     def __init__(self, serial):
