@@ -36,9 +36,9 @@ class JoystickReader(object):
         self.__fn = '/dev/input/js0'
         self.__writer = UMDSerialWriter(serial=self.__serial)
         self.__pt = PacketProtocol()
-        self.__ESTOP = 0x00
-        self.__GEAR = 0x01
-        self.__WHEEL = 0x01
+        self.__ESTOP = 'OFF' 
+        self.__GEAR = 'GNEUTRAL'
+        self.__WHEEL = 'WFOURTH'
 
     def joy_check(self):
 
@@ -175,6 +175,8 @@ class JoystickReader(object):
                         if type & 0x02:
                             # number로 해당 축의 이름 가져오기
                             axis = self.axis_map[number]
+                            speed_value = [0x00, 0x00]
+                            steer_value = [0x00, 0x00]
                             
                             if axis == 'x':
                                 # 값을 32767로 나눠서 0 또는 1, -1 로 표시
@@ -182,12 +184,12 @@ class JoystickReader(object):
                                 # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
                                 # 상태값(0, 1, -1)을 저장
                                 axis_val = int(value)
-                                print("%s: %.3f \t" % (axis, axis_val), end="")
+                                # print("%s: %.3f \t" % (axis, axis_val), end="")
                                 speed_value = axis_val.to_bytes(2, byteorder="little", signed=True)
                                 
                             elif axis == 'y':
                                 axis_val = int(value)
-                                print("%s: %.3f \t" % (axis, axis_val), end="")
+                                # print("%s: %.3f \t" % (axis, axis_val), end="")
                                 steer_value = axis_val.to_bytes(2, byteorder="little", signed=True)
 
                             self.__pt.speed_data[0] = speed_value[0]
@@ -237,6 +239,12 @@ class JoystickReader(object):
             'a'         :'WFORWARD', 
             'c'         :'WBACKWARD',
             'x'         :'WFOURTH',
+            'base'      :'OFF',
+            'base2'     :'ON',
+            'base3'     :'GFORWARD',
+            'base4'     :'GBACKWARD',
+            'base5'     :'WFORWARD',
+            'base6'     :'WBACKWARD',
         }         
         return buttons.get(data,"Invalid button")
                        
