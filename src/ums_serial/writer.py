@@ -30,13 +30,12 @@ class UMDSerialWriter():
     def reopen(self):
         try:
             self.__serial = serial.Serial(
-                port='/dev/serial0',
+                port='/dev/test',
                 baudrate=9600
             )
             print("시리얼이 재 연결되었습니다.")
 
         except:
-            pass
             print(u' 포트를 다시 연결해 주세요')
         sleep(0.05)
 

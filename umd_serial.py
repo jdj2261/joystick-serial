@@ -41,7 +41,7 @@ class UMDSerial():
     def open(self):
         try:
             self.__serial = serial.Serial(
-                port='/dev/serial0',
+                port='/dev/test',
                 baudrate=9600,
             )
             # print('시리얼 연결이 확인되었습니다.')
