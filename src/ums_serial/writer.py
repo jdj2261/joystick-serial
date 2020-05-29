@@ -10,8 +10,6 @@ Description: Pyserial Write
 
 import serial
 import time
-import threading
-
 
 class UMDSerialWriter():
     def __init__(self, serial):
@@ -40,6 +38,6 @@ class UMDSerialWriter():
         except:
             pass
             print(u' 포트를 다시 연결해 주세요')
-        time.sleep(0.05)
+        sleep(0.05)
 
 

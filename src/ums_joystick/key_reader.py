@@ -8,11 +8,10 @@ Author: Dae Jong Jin
 Description: Logitech Joystick key reader
 '''
 
-import os, struct, array
+import os, struct, array, sys
 from time import sleep
-#import threading
-
-
+from fcntl import ioctl
+from threading import Thread
 from .names import axis_names, button_names
 from .protocol import PacketProtocol
 from src.ums_serial.writer import UMDSerialWriter
@@ -30,22 +29,7 @@ class JoystickReader(object):
     origin_axis_map = []
     origin_button_map = []
 
-    start_bit = "0x01"
-    end_bit   = "0x11"
-
     def __init__(self,serial):
-
-        # try:
-        #     from fcntl import ioctl
-        # except ModuleNotFoundError:
-        #     self.num_axes = 0
-        #     self.num_buttons = 0
-        #     print("no support for fnctl module. joystick not enabled.")
-        #     return
-
-        # if not os.path.exists(self.dev_fn):
-        #     print(self.dev_fn, "is missing")
-        #     return
 
         self.__serial = serial
         self.__num_buttons = None
@@ -54,9 +38,9 @@ class JoystickReader(object):
         self.__fn = '/dev/input/js0'
         self.__writer = UMDSerialWriter(serial=self.__serial)
         self.__pt = PacketProtocol()
-        self.__ESTOP = None
-        self.__GEAR = None
-        self.__WHEEL = None
+        self.__ESTOP = 0x00
+        self.__GEAR = 0x01
+        self.__WHEEL = 0x01
 
     def joy_check(self):
 
@@ -104,12 +88,8 @@ class JoystickReader(object):
             # 예를들어 axis가 0이면 axis_names에서 0x00 > 'x'를 가져오고
             # axis가 1이면 axis_names에 0x01 > 'y'를 가져오기 된다.
             axis_name = axis_names.get(axis, 'unknown(0x%02x)' % axis)
-            self.axis_map.aaxis_statesppend(axis_name)
+            self.axis_map.append(axis_name)
             self.axis_states[axis_name] = 0.0
-
-            origin_axis_name = origin_axis_names.get(axis, 'unknown(0x%02x)' % axis)
-            self.origin_axis_map.append(origin_axis_name)
-            self.origin_axis_states[origin_axis_name] = 0.0
 
     def button_read(self):
         # 드라이버로부터 버튼 개수 가져오기
@@ -128,9 +108,19 @@ class JoystickReader(object):
             self.button_map.append(btn_name)
             self.button_states[btn_name] = 0
 
-            origin_btn_name = origin_button_names.get(btn, 'unknown(0x%03x)' % btn)
-            self.origin_button_map.append(origin_btn_name)
-            self.origin_button_states[origin_btn_name] = 0
+    def sendpacket_thread(self):
+        
+        while True:        # alive count (0 ~ 255)
+            self.__pt.count_alive()
+
+            # makepacket
+            packet = self.__pt.makepacket(ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
+            print("packet : {0}".format(packet))
+            
+            # send packet
+            self.__writer.run(packet)
+            sleep(0.05) # 20Hz
+
 
     def joy_main_event(self):
         # Main event loop
@@ -139,109 +129,86 @@ class JoystickReader(object):
         axis = 0
         axis_val = 0
 
-        while True:
-            # 키 읽기 블록 상태(Block) 
-            # 키 입력이 들어오기 전까지 무조건 대기
-            try:
-                if self.jsdev is None:
-                    return
-                    
-                evbuf = self.__jsdev.read(8)
-                # 이벤트가 발생했다면
-                if evbuf:
-                    # 시간, 값, 타입, 번호 등으로 가져옴
-                    time, value, type, number = struct.unpack('IhBB', evbuf)
+        try:
+            t = Thread(target=self.sendpacket_thread)
+            t.daemon = True
+            t.start()
 
-                    # type이 0x01 버튼이 눌렸거나 떨어졌을때이다.
-                    if type & 0x01:
-                        # number 값으로 해당 버튼 이름 가져오기
-                        button = self.button_map[number]
-                        self.button_states[button] = value
-                        result_button = self.compare_button_data(button)
-                        
-                        # 버튼을 누르면
-                        if value:
-                            # 누른 버튼의 정보를 가져옴
-                            print(result_button)
+            while True:
+                # 키 읽기 블록 상태(Block) 
+                # 키 입력이 들어오기 전까지 무조건 대기
+                try:       
+                    evbuf = self.__jsdev.read(8)
+                    # 이벤트가 발생했다면
+                    if evbuf:
+                        # 시간, 값, 타입, 번호 등으로 가져옴
+                        time, value, type, number = struct.unpack('IhBB', evbuf)
+
+                        # type이 0x01 버튼이 눌렸거나 떨어졌을때이다.
+                        if type & 0x01:
+                            # number 값으로 해당 버튼 이름 가져오기
+                            button = self.button_map[number]
+                            self.button_states[button] = value
+                            result_button = self.compare_button_data(button)
                             
-                            if result_button == 'OFF' :
-                                self.__ESTOP = 'OFF'
-                            elif result_button == 'ON' :
-                                self.__ESTOP = 'ON'
-                            elif result_button == 'GFORWARD':
-                                self.__GEAR = 'GFORWARD'
-                            elif result_button == 'GNEUTRAL':
-                                self.__GEAR = 'GNEUTRAL'
-                            elif result_button == 'GBACKWARD':
-                                self.__GEAR = 'GBACKWARD'
-                            elif result_button == 'WFORWARD':
-                                self.__WHEEL = 'WFORWARD'
-                            elif result_button == 'WFOURTH':
-                                self.__WHEEL = 'WFOURTH'                        
-                            elif result_button == 'WBACKWARD':
-                                self.__WHEEL = 'WBACKWARD'
-
-                        origin_button = self.origin_button_map[number]
-                        
-                        if origin_button:
-                            self.origin_button_states[origin_button] = value
-                            print("Change --> ", end="")
+                            # 버튼을 누르면
                             if value:
-                                print("%s pressed " % (origin_button), end="")
-                            else:
-                                print("%s released " % (origin_button), end="")                    
-                    
-                    # type이 0x02이면 축이 이동한 상태이다.
-                    if type & 0x02:
-                        # number로 해당 축의 이름 가져오기
-                        axis = self.axis_map[number]
+                                # 누른 버튼의 정보를 가져옴
+                                print(result_button)
+                                
+                                if result_button == 'OFF' :
+                                    self.__ESTOP = 'OFF'
+                                elif result_button == 'ON' :
+                                    self.__ESTOP = 'ON'
+                                elif result_button == 'GFORWARD':
+                                    self.__GEAR = 'GFORWARD'
+                                elif result_button == 'GNEUTRAL':
+                                    self.__GEAR = 'GNEUTRAL'
+                                elif result_button == 'GBACKWARD':
+                                    self.__GEAR = 'GBACKWARD'
+                                elif result_button == 'WFORWARD':
+                                    self.__WHEEL = 'WFORWARD'
+                                elif result_button == 'WFOURTH':
+                                    self.__WHEEL = 'WFOURTH'                        
+                                elif result_button == 'WBACKWARD':
+                                    self.__WHEEL = 'WBACKWARD'
                         
-                        if axis == 'x':
-                            # 값을 32767로 나눠서 0 또는 1, -1 로 표시
-                            # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
-                            # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
-                            # 상태값(0, 1, -1)을 저장
-                            axis_val = int(value)
-                            print("%s: %.3f \t" % (axis, axis_val), end="")
-                            speed_value = axis_val.to_bytes(2, byteorder="little", signed=True)
+                        # type이 0x02이면 축이 이동한 상태이다.
+                        if type & 0x02:
+                            # number로 해당 축의 이름 가져오기
+                            axis = self.axis_map[number]
                             
-                        elif axis == 'rz':
-                            axis_val = int(value)
-                            print("%s: %.3f \t" % (axis, axis_val), end="")
-                            steer_value = axis_val.to_bytes(2, byteorder="little", signed=True)
+                            if axis == 'x':
+                                # 값을 32767로 나눠서 0 또는 1, -1 로 표시
+                                # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
+                                # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
+                                # 상태값(0, 1, -1)을 저장
+                                axis_val = int(value)
+                                print("%s: %.3f \t" % (axis, axis_val), end="")
+                                speed_value = axis_val.to_bytes(2, byteorder="little", signed=True)
+                                
+                            elif axis == 'y':
+                                axis_val = int(value)
+                                print("%s: %.3f \t" % (axis, axis_val), end="")
+                                steer_value = axis_val.to_bytes(2, byteorder="little", signed=True)
 
-                        origin_axis = self.origin_axis_map[number]
-                        if origin_axis:
-                            print("Change --> ", end="")
-                            fvalue = value / 32767
-                            # 상태값(0, 1, -1)을 저장
-                            self.origin_axis_states[origin_axis] = fvalue
-                            print("%s: %.3f" % (origin_axis, fvalue), end="")
+                            self.__pt.speed_data[0] = speed_value[0]
+                            self.__pt.speed_data[1] = speed_value[1]
+                            self.__pt.steer_data[0] = steer_value[0]
+                            self.__pt.steer_data[1] = steer_value[1]
+                            
+                # 조이스틱 연결이 끊어지면 재 연결 시도
+                except OSError:
+                    self.reconect()
+                except KeyboardInterrupt:
+                    t.join()
+                    print(" ctrl + c pressed !!")
+                    print("exit .. ")
+                    exit(0)
+        except (KeyboardInterrupt, SystemExit):
+            print ('\n! Received keyboard interrupt, quitting threads.\n')
+            sys.exit()
 
-                        self.__pt.speed_data[0] = speed_value[0]
-                        self.__pt.speed_data[1] = speed_value[1]
-                        self.__pt.steer_data[0] = steer_value[0]
-                        self.__pt.steer_data[1] = steer_value[1]
-                        
-                # alive count (0 ~ 255)
-                self.__pt.count_alive()
-
-                # makepacket
-                packet = self.__pt.makepacket(ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
-                print("packet : {0}".format(packet))
-                
-                # send packet
-                self.__writer.run(packet)
-
-                sleep(0.05) # 20Hz
-
-            # 조이스틱 연결이 끊어지면 재 연결 시도
-            except OSError:
-                self.reconect()
-            except KeyboardInterrupt:
-                print(" ctrl + c pressed !!")
-                print("exit .. ")
-                exit(0)
             
     def reconect(self):
         # print("test")
@@ -257,14 +224,8 @@ class JoystickReader(object):
         except:
             pass
             print("조이스틱을 다시 연결하세요..")
-        time.sleep(1)
-
-    # def change_hex(self, data):
-    #     data = struct.pack(">i",data)
-    #     data = hex(int(data.hex(),16))
-    #     # print(data)
-    #     return data
-    
+        sleep(1)
+   
     def compare_button_data(self, data):
         buttons = {
             'tl'        :'OFF', 
