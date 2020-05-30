@@ -14,6 +14,7 @@ Description: Serial and Joystick Connection
 '''
 
 class UMDSerial():
+    port_name = "/dev/test"
 
     def __init__(self):
         self.__serial = None
@@ -24,9 +25,10 @@ class UMDSerial():
 
     def waitPort(self):
 
-        # print("시리얼 연결이 되었습니다.")
         while(True) : 
-            self.__is_serial_connect = self.open()
+            # print(self.port_name)
+            self.__is_serial_connect = self.open(self.port_name)
+
   
             # 시리얼 연결이 되면
             if self.__is_serial_connect == True :
@@ -35,13 +37,12 @@ class UMDSerial():
                 break
             else :
                 print("시리얼 연결이 되었는지 확인해 주세요.")
-        
             time.sleep(1.0)
 
-    def open(self):
+    def open(self, port_name):
         try:
             self.__serial = serial.Serial(
-                port='/dev/test',
+                port=port_name,
                 baudrate=9600,
             )
             # print('시리얼 연결이 확인되었습니다.')
@@ -52,7 +53,7 @@ class UMDSerial():
         return True
 
     def triggerjoy(self):
-        jr = JoystickReader(serial=self.__serial)
+        jr = JoystickReader(serial=self.__serial, port=self.port_name)
         jr.joy_open()
         jr.joy_name_read()
         jr.axis_read()

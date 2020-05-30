@@ -29,7 +29,9 @@ ETX1 → 0x0A
 '''
 from time import sleep
 from threading import Thread
+
 class PacketProtocol(object):
+    
     packet  = [0 for i in range(14)]
     ESTOP   = {'OFF' : 0x00 , 'ON' : 0x01}
     GEAR    = {'GFORWARD' : 0x00, 'GNEUTRAL' : 0x01, 'GBACKWARD' : 0x02}
@@ -65,8 +67,6 @@ class PacketProtocol(object):
         return self.packet
 
     def calc_checksum(self, data ):
-        result = data
-        # print(data) 
         sum = 0
         for i in data:
             sum = sum + i
@@ -79,37 +79,37 @@ class PacketProtocol(object):
         if self.ALIVE >= 256 :
             self.ALIVE = 0
 
-    # def test_process(self):
-    #     while True:
-    #         pt.count_alive()
-    #         # print('{0:02x}'.format(pt.ALIVE))
-    #         result = pt.makepacket(WHEELMODE='WBACKWARD')
-    #         print(result)   
-    #         sleep(0.05)
+#     def test_process(self):
+#         while True:
+#             pt.count_alive()
+#             # print('{0:02x}'.format(pt.ALIVE))
+#             result = pt.makepacket(WHEELMODE='WBACKWARD')
+#             print(result)   
+#             sleep(0.05)
 
-    # def test_f(self):
+#     def test_f(self):
 
-    #     t = Thread(target=self.test_process)
-    #     t.daemon = True
-    #     t.start()
-    #     while True:
-    #         stop_char=input("Enter 'q' to quit ")
-    #         # print(t)
-    #         if stop_char.lower() == "q":
-    #             # t.join()
-    #             print("pressed q")
-    #             exit(0)
-    #             break
-    #         if stop_char.lower() == "u":
-    #             print("Input u")
-    #             self.t = 2
-    #         if stop_char.lower() == "e":
-    #             print("Input u")
-    #             self.t = 3
+#         t = Thread(target=self.test_process)
+#         t.daemon = True
+#         t.start()
+#         while True:
+#             stop_char=input("Enter 'q' to quit ")
+#             # print(t)
+#             if stop_char.lower() == "q":
+#                 # t.join()
+#                 print("pressed q")
+#                 exit(0)
+#                 break
+#             if stop_char.lower() == "u":
+#                 print("Input u")
+#                 self.ETX0 = 2
+#             if stop_char.lower() == "e":
+#                 print("Input u")
+#                 self.ETX0 = 3
             
-if __name__ == "__main__":
-    pt = PacketProtocol()
-    pt.test_f()
+# if __name__ == "__main__":
+#     pt = PacketProtocol()
+#     pt.test_f()
     
 
 

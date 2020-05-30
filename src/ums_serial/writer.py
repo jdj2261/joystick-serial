@@ -12,15 +12,14 @@ import serial
 from time import sleep
 
 class UMDSerialWriter():
-    def __init__(self, serial):
+    def __init__(self, serial, port):
         self.__serial = serial
+        self.__port = port
 
     def run(self, send_data):
-        # print(self.__send_data)
         try:
-            result = send_data
-            # list -> bytes 
-            self.__serial.write(serial.to_bytes(result))        
+            self.__serial.write(serial.to_bytes(send_data))        
+            # self.__serial.write(bytearray(send_data))
             # self.__serial.write(result.encode('utf-8'))
             # print("\tSend ---> {0} ".format(result.encode('utf-8')))
         except:
@@ -30,13 +29,13 @@ class UMDSerialWriter():
     def reopen(self):
         try:
             self.__serial = serial.Serial(
-                port='/dev/test',
-                baudrate=9600
+                port=self.__port,
+                baudrate=9600,
             )
             print("시리얼이 재 연결되었습니다.")
 
         except:
             print(u' 포트를 다시 연결해 주세요')
-        sleep(0.05)
+        sleep(1)
 
 

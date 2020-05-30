@@ -8,7 +8,7 @@ Author: Dae Jong Jin
 Description: Logitech Joystick key reader
 '''
 
-import os, struct, array, sys
+import os, struct, array
 from time import sleep
 from fcntl import ioctl
 from threading import Thread
@@ -27,14 +27,15 @@ class JoystickReader(object):
     origin_axis_map = []
     origin_button_map = []
 
-    def __init__(self,serial):
+    def __init__(self,serial, port):
 
         self.__serial = serial
+        self.__port = port
         self.__num_buttons = None
         self.__num_axes = None
         self.__jsdev = None
         self.__fn = '/dev/input/js0'
-        self.__writer = UMDSerialWriter(serial=self.__serial)
+        self.__writer = UMDSerialWriter(serial=self.__serial, port=self.__port)
         self.__pt = PacketProtocol()
         self.__ESTOP = 'OFF' 
         self.__GEAR = 'GNEUTRAL'
@@ -207,7 +208,7 @@ class JoystickReader(object):
                     exit(0)
         except (KeyboardInterrupt, SystemExit):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
-            sys.exit()
+            exit(0)
 
             
     def reconect(self):
@@ -220,9 +221,8 @@ class JoystickReader(object):
             if self.__jsdev:
                 print("조이스틱 체크 성공")
                 return True
-        
+
         except:
-            pass
             print("조이스틱을 다시 연결하세요..")
         sleep(1)
    
@@ -239,6 +239,7 @@ class JoystickReader(object):
             'a'         :'WFORWARD', 
             'c'         :'WBACKWARD',
             'x'         :'WFOURTH',
+            # Test
             'base'      :'OFF',
             'base2'     :'ON',
             'base3'     :'GFORWARD',
@@ -248,48 +249,3 @@ class JoystickReader(object):
         }         
         return buttons.get(data,"Invalid button")
                        
-       
-    # def joy_test(self):
-    #     try :
-    #         while True :
-                
-    #             try:
-    #                 print(" --- Test ---")
-    #                 # test_input = int(input(" 입력하세요 : "))
-    #                 test_input = 0x01
-
-
-    #                 self.__jsdev = open(self.__fn, 'rb')
-    #                 if self.__jsdev:
-    #                     self.__writer.run(hex(test_input))
-    #                     # print("조이스틱 체크 성공")
-    #                 time.sleep(1)
-    #                     # return True
-
-    #                 # if test_input in self.tmp_axis_map :
-    #                 #     pass
-    #                 #     # print(tmp_axis_map[1])
-                        
-    #                 # else :
-    #                 #     print(" 존재하지 않습니다..")
-    #             except ValueError :
-    #                 print("잘못된 입력입니다.")
-    #             except FileNotFoundError :
-    #                 print("조이스틱 연결이 끊어졌습니다.")
-    #                 try:
-    #                     self.__jsdev = open(self.__fn, 'rb')
-    #                     print("조이스틱 재 연결되었습니다.")
-    #                 except:
-    #                     print("조이스틱을 다시 연결해 주세요")
-    #                 time.sleep(1)
-
-    #     except KeyboardInterrupt as e:
-    #         print(" ctrl + c pressed !!")
-    #         print("exit .. ")
-
-
-    # threading
-    # def write(self, data):
-    #     self.__writer = UMDSerialWriter(serial=self.__serial, send_data = hex(data))
-    #     t = threading.Thread(target = self.__writer.run, args="")
-    #     t.start()
