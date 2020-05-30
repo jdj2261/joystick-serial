@@ -14,7 +14,7 @@ Description: Serial and Joystick Connection
 '''
 
 class UMDSerial():
-    port_name = "/dev/test"
+    port_name = "/dev/serial0"
 
     def __init__(self):
         self.__serial = None
@@ -27,7 +27,7 @@ class UMDSerial():
 
         while(True) : 
             # print(self.port_name)
-            self.__is_serial_connect = self.open(self.port_name)
+            self.__is_serial_connect = self.open(UMDSerial.port_name)
 
   
             # 시리얼 연결이 되면

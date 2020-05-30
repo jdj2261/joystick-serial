@@ -20,10 +20,13 @@ X → 0x58
 ESTOP → 0x00 : OFF,           0x01 : ON
 GEAR  → 0x00 : forward drive, 0x01 : neutral,     0x02 : backward drive
 WHEEL → 0x00 : forward wheel, 0x01: fourth wheel, 0x02 : backward wheel
-SPEED → -32768 ~ 32768 //actual speed
-STEER → -32768 ~ 32768 // actual steering degree
+SPEED → -32767 ~ 32767 //actual speed
+STEER → -32767 ~ 32767 // actual steering degree
 ALIVE → 0 ~ 255        // increasing each one step 
-Checksum → E-STOP + GEAR + WHEEL + SPEED0 + SPEED1 + STEER0 + STEER1
+Checksum → E-STOP +    operate = JoystickReader()
+                t = Thread(target=operate.sendpacket_thread)
+                t.daemon = True
+                t.start() GEAR + WHEEL + SPEED0 + SPEED1 + STEER0 + STEER1
 ETX0 → 0x0D
 ETX1 → 0x0A 
 '''
