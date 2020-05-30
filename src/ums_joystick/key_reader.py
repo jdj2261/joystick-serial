@@ -11,6 +11,7 @@ Description: Logitech Joystick key reader
 import os, struct, array
 from time import sleep
 from fcntl import ioctl
+import sys
 from threading import Thread
 from .names import axis_names, button_names
 from .protocol import PacketProtocol
@@ -40,6 +41,7 @@ class JoystickReader(object):
         self.__ESTOP = 'OFF' 
         self.__GEAR = 'GNEUTRAL'
         self.__WHEEL = 'WFOURTH'
+        self.__isConnect_joy = True
 
     def joy_check(self):
 
@@ -110,14 +112,15 @@ class JoystickReader(object):
     def sendpacket_thread(self):
         
         while True:        # alive count (0 ~ 255)
-            self.__pt.count_alive()
-
-            # makepacket
-            packet = self.__pt.makepacket(ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
-            print("packet : {0}".format(packet))
-            
             # send packet
-            self.__writer.run(packet)
+            if self.__isConnect_joy:
+                self.__pt.count_alive()
+                packet = self.__pt.makepacket(ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
+                print("packet : {0}".format(packet))
+                self.__writer.run(packet)
+            else:
+                print("not joystick connect")
+                sleep(1.0)
             sleep(0.05) # 20Hz
 
 
@@ -156,6 +159,7 @@ class JoystickReader(object):
                                 print(result_button)
                                 
                                 if result_button == 'OFF' :
+                                    # os.popen("shutdown -h now")
                                     self.__ESTOP = 'OFF'
                                 elif result_button == 'ON' :
                                     self.__ESTOP = 'ON'
@@ -214,15 +218,17 @@ class JoystickReader(object):
     def reconect(self):
         # print("test")
         try:
+            # self.isConnect_joy = False
             print("조이스틱을 재 연결합니다.")
             print('Opening %s...' % self.__fn)
             self.__jsdev = open(self.__fn, 'rb')
 
             if self.__jsdev:
                 print("조이스틱 체크 성공")
-                return True
+                self.__isConnect_joy = True
 
         except:
+            self.__isConnect_joy = False
             print("조이스틱을 다시 연결하세요..")
         sleep(1)
    
