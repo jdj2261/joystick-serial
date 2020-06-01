@@ -53,7 +53,7 @@ class PacketProtocol(object):
         self.ETX0        = 0x0D
         self.ETX1        = 0x0A
 
-    def makepacket(self, ESTOPMODE='OFF', GEARMODE='GNEUTRAL', WHEELMODE='WFOURTH'):
+    def makepacket(self, ESTOPMODE='OFF', GEARMODE='GNEUTRAL', WHEELMODE='WFORWARD'):
         self.packet[0]   = self.S
         self.packet[1]   = self.T 
         self.packet[2]   = self.X       

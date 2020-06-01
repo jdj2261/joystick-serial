@@ -40,7 +40,7 @@ class JoystickReader(object):
         self.__pt = PacketProtocol()
         self.__ESTOP = 'OFF' 
         self.__GEAR = 'GNEUTRAL'
-        self.__WHEEL = 'WFOURTH'
+        self.__WHEEL = 'WFORWARD'
         self.__isConnect_joy = True
 
     def joy_check(self):
@@ -121,7 +121,7 @@ class JoystickReader(object):
             else:
                 print("not joystick connect")
                 sleep(1.0)
-            sleep(0.05) # 20Hz
+            sleep(0.02) # 50Hz
 
 
     def joy_main_event(self):
@@ -157,7 +157,7 @@ class JoystickReader(object):
                             # 버튼을 누르면
                             if value:
                                 # 누른 버튼의 정보를 가져옴
-                                print(result_button)
+                                # print(result_button)
                             
 
                                 if result_button == 'OFF' :
@@ -258,11 +258,9 @@ class JoystickReader(object):
         buttons = {
             'tl'        :'OFF', 
             'tr'        :'ON', 
-
             'y'         :'WFORWARD', 
             'a'         :'WBACKWARD',
             'x'         :'WFOURTH',
-
         }         
         return buttons.get(data,"Invalid button")
                        
