@@ -130,8 +130,6 @@ class JoystickReader(object):
         button = None
         axis = 0
         axis_val = 0
-        tl_cnt = 0
-        tr_cnt = 0
         try:
             t = Thread(target=self.sendpacket_thread)
             t.daemon = True
