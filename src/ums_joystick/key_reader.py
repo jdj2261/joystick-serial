@@ -178,17 +178,33 @@ class JoystickReader(object):
                             speed_value = [0x00, 0x00]
                             steer_value = [0x00, 0x00]
                             
-                            if axis == 'y':
+                            # excel
+                            if axis == 'z':
                                 # 값을 32767로 나눠서 0 또는 1, -1 로 표시
                                 # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
                                 # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
                                 # 상태값(0, 1, -1)을 저장
-                                axis_val = -1 * int(value)
-                                # print("%s: %.3f \t" % (axis, axis_val), end="")
-                                speed_value = axis_val.to_bytes(2, byteorder="little", signed=True)
+                                # 0 ~ 65534
+                                axis_val = int(value) + 32767
+                                print("%s: %.3f \t" % (axis, axis_val), end="")
+                                speed_value = axis_val.to_bytes(2, byteorder="little", signed=False)
                                 self.__pt.speed_data[0] = speed_value[0]
                                 self.__pt.speed_data[1] = speed_value[1]
+
+                            # break
+                            if axis == 'rz':
+                                # 값을 32767로 나눠서 0 또는 1, -1 로 표시
+                                # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
+                                # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
+                                # 상태값(0, 1, -1)을 저장
+                                # 0 ~ 65534
+                                axis_val = int(value) + 32767
+                                print("%s: %.3f \t" % (axis, axis_val), end="")
+                                break_value = axis_val.to_bytes(2, byteorder="little", signed=False)
+                                self.__pt.break_data[0] = break_value[0]
+                                self.__pt.break_data[1] = break_value[1]
                             
+                            # steer
                             elif axis == 'rx':
                                 axis_val = int(value)
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")

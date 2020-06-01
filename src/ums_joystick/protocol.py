@@ -11,8 +11,8 @@ Description: Joystick Protocol
 '''
 packet definition
 LENGTH : 14bytes
-0 1 2   3     4    5      6     7      8      9      10      11     12   13
-S T X ESTOP GEAR WHEEL SPEED0 SPEED1 STEER0 STEER1 ALIVE CHECKSUM ETX0 ETX1
+0 1 2   3     4    5      6     7      8      9      10     11    12      13     14   15
+S T X ESTOP GEAR WHEEL SPEED0 SPEED1 BREAK0 BREAK1 STEER0 STEER1 ALIVE CHECKSUM ETX0 ETX1
 
 S → 0x53 
 T → 0x54
@@ -21,12 +21,13 @@ ESTOP → 0x00 : OFF,           0x01 : ON
 GEAR  → 0x00 : forward drive, 0x01 : neutral,     0x02 : backward drive
 WHEEL → 0x00 : forward wheel, 0x01: fourth wheel, 0x02 : backward wheel
 SPEED → -32767 ~ 32767 //actual speed
+BREAK → -32767 ~ 32767 //break 
 STEER → -32767 ~ 32767 // actual steering degree
 ALIVE → 0 ~ 255        // increasing each one step 
 Checksum → E-STOP +    operate = JoystickReader()
                 t = Thread(target=operate.sendpacket_thread)
                 t.daemon = True
-                t.start() GEAR + WHEEL + SPEED0 + SPEED1 + STEER0 + STEER1
+                t.start() GEAR + WHEEL + SPEED0 + SPEED1 + BREAK0 + BREAK1 + STEER0 + STEER1
 ETX0 → 0x0D
 ETX1 → 0x0A 
 '''
@@ -35,7 +36,7 @@ from threading import Thread
 
 class PacketProtocol(object):
     
-    packet  = [0 for i in range(14)]
+    packet  = [0 for i in range(16)]
     ESTOP   = {'OFF' : 0x00 , 'ON' : 0x01}
     GEAR    = {'GFORWARD' : 0x00, 'GNEUTRAL' : 0x01, 'GBACKWARD' : 0x02}
     WHEEL   = {'WFORWARD' : 0x00, 'WFOURTH'  : 0x01, 'WBACKWARD' : 0x02}
@@ -45,6 +46,7 @@ class PacketProtocol(object):
         self.T           = 0x54
         self.X           = 0x58
         self.speed_data  = [0x00,0x00]
+        self.break_data  = [0x00,0x00]
         self.steer_data  = [0x00,0x00]
         self.ALIVE       = 0x00
         self.CHECKSUM    = 0x00
@@ -60,12 +62,14 @@ class PacketProtocol(object):
         self.packet[5]   = self.WHEEL.get(WHEELMODE)
         self.packet[6]   = self.speed_data[0]
         self.packet[7]   = self.speed_data[1]
-        self.packet[8]   = self.steer_data[0]
-        self.packet[9]   = self.steer_data[1]
-        self.packet[10]  = self.ALIVE
-        self.packet[11]  = self.calc_checksum(self.packet[3:10])
-        self.packet[12]  = self.ETX0
-        self.packet[13]  = self.ETX1
+        self.packet[8]   = self.break_data[0]
+        self.packet[9]   = self.break_data[1]
+        self.packet[10]  = self.steer_data[0]
+        self.packet[11]  = self.steer_data[1]
+        self.packet[12]  = self.ALIVE
+        self.packet[13]  = self.calc_checksum(self.packet[3:12])
+        self.packet[14]  = self.ETX0
+        self.packet[15]  = self.ETX1
 
         return self.packet
 
