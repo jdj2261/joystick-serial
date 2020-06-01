@@ -77,7 +77,7 @@ class PacketProtocol(object):
         sum = 0
         for i in data:
             sum = sum + i
-        sum = -(sum % 256)
+        # sum = -(sum % 256)
         checksum = sum & 0xFF
         return checksum
 
