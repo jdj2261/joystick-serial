@@ -186,7 +186,7 @@ class JoystickReader(object):
                                 # 상태값(0, 1, -1)을 저장
                                 # 0 ~ 65534
                                 axis_val = int(value) + 32767
-                                print("%s: %.3f \t" % (axis, axis_val), end="")
+                                # print("%s: %.3f \t" % (axis, axis_val), end="")
                                 speed_value = axis_val.to_bytes(2, byteorder="little", signed=False)
                                 self.__pt.speed_data[0] = speed_value[0]
                                 self.__pt.speed_data[1] = speed_value[1]
@@ -199,7 +199,7 @@ class JoystickReader(object):
                                 # 상태값(0, 1, -1)을 저장
                                 # 0 ~ 65534
                                 axis_val = int(value) + 32767
-                                print("%s: %.3f \t" % (axis, axis_val), end="")
+                                # print("%s: %.3f \t" % (axis, axis_val), end="")
                                 break_value = axis_val.to_bytes(2, byteorder="little", signed=False)
                                 self.__pt.break_data[0] = break_value[0]
                                 self.__pt.break_data[1] = break_value[1]
