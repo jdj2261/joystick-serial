@@ -117,7 +117,7 @@ class JoystickReader(object):
                 self.__pt.count_alive()
                 packet = self.__pt.makepacket(ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
                 print("packet : {0}".format(packet))
-                # self.__writer.run(packet)
+                self.__writer.run(packet)
             else:
                 print("not joystick connect")
                 sleep(1.0)
