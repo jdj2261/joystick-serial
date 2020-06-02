@@ -235,6 +235,8 @@ class JoystickReader(object):
                 # 조이스틱 연결이 끊어지면 재 연결 시도
                 except OSError:
                     self.reconect()
+                except IndexError:
+                    self.reconect()
                 except KeyboardInterrupt:
                     t.join()
                     print(" ctrl + c pressed !!")
