@@ -36,7 +36,7 @@ from threading import Thread
 
 class PacketProtocol(object):
     
-    packet  = [0 for i in range(16)]
+    packet  = [0 for i in range(18)]
     ESTOP   = {'OFF' : 0x00 , 'ON' : 0x01}
     GEAR    = {'GFORWARD' : 0x00, 'GNEUTRAL' : 0x01, 'GBACKWARD' : 0x02}
     WHEEL   = {'WFORWARD' : 0x00, 'WFOURTH'  : 0x01, 'WBACKWARD' : 0x02}
@@ -47,7 +47,7 @@ class PacketProtocol(object):
         self.X           = 0x58
         self.speed_data  = [0x00,0x00]
         self.break_data  = [0x00,0x00]
-        self.steer_data  = [0x00,0x00]
+        self.steer_data  = [0x00,0x00, 0x00, 0x00]
         self.ALIVE       = 0x00
         self.CHECKSUM    = 0x00
         self.ETX0        = 0x0D
@@ -66,10 +66,12 @@ class PacketProtocol(object):
         self.packet[9]   = self.break_data[1]
         self.packet[10]  = self.steer_data[0]
         self.packet[11]  = self.steer_data[1]
-        self.packet[12]  = self.ALIVE
-        self.packet[13]  = self.calc_checksum(self.packet[3:12])
-        self.packet[14]  = self.ETX0
-        self.packet[15]  = self.ETX1
+        self.packet[12]  = self.steer_data[2]
+        self.packet[13]  = self.steer_data[3]
+        self.packet[14]  = self.ALIVE
+        self.packet[15]  = self.calc_checksum(self.packet[3:14])
+        self.packet[16]  = self.ETX0
+        self.packet[17]  = self.ETX1
 
         return self.packet
 

@@ -117,7 +117,7 @@ class JoystickReader(object):
                 self.__pt.count_alive()
                 packet = self.__pt.makepacket(ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
                 print("packet : {0}".format(packet))
-                self.__writer.run(packet)
+                # self.__writer.run(packet)
             else:
                 print("not joystick connect")
                 sleep(1.0)
@@ -130,6 +130,7 @@ class JoystickReader(object):
         button = None
         axis = 0
         axis_val = 0
+        exp_val = 0
         try:
             t = Thread(target=self.sendpacket_thread)
             t.daemon = True
@@ -175,6 +176,7 @@ class JoystickReader(object):
                             axis = self.axis_map[number]
                             speed_value = [0x00, 0x00]
                             steer_value = [0x00, 0x00]
+                            exp_value   = [0x00,0x00]
                             
                             # excel
                             if axis == 'z':
@@ -205,21 +207,29 @@ class JoystickReader(object):
                             # steer
                             elif axis == 'rx':
                                 axis_val = int(value)
+                                if axis_val == 0:
+                                    exp_val = 0
+                                else :     
+                                    exp_val = int((pow((axis_val/32767),2) * 32767 * (axis_val / abs(axis_val))))
+                                # print("axis_val : {0}, exp_val : {1}".format(axis_val,int(exp_val)))
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
                                 steer_value = axis_val.to_bytes(2, byteorder="little", signed=True)
+                                exp_value = exp_val.to_bytes(2, byteorder="little", signed=True)
                                 self.__pt.steer_data[0] = steer_value[0]
                                 self.__pt.steer_data[1] = steer_value[1]
+                                self.__pt.steer_data[2] = exp_value[0]
+                                self.__pt.steer_data[3] = exp_value[1]
 
                             elif axis == 'hat0y':
-                                axis_vel = int(value) / 32767
-                                if axis_vel == -1.0:
+                                axis_val = int(value) / 32767
+                                if axis_val == -1.0:
                                     self.__GEAR = 'GFORWARD'
-                                elif axis_vel == 1.0:
+                                elif axis_val == 1.0:
                                     self.__GEAR = 'GBACKWARD'
 
                             elif axis == 'hat0x':
-                                axis_vel = int(value) / 32767
-                                if axis_vel :
+                                axis_val = int(value) / 32767
+                                if axis_val :
                                     self.__GEAR = 'GNEUTRAL'
                                            
                 # 조이스틱 연결이 끊어지면 재 연결 시도
@@ -230,6 +240,7 @@ class JoystickReader(object):
                     print(" ctrl + c pressed !!")
                     print("exit .. ")
                     exit(0)
+
         except (KeyboardInterrupt, SystemExit):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
             exit(0)
