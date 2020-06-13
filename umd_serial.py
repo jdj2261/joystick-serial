@@ -14,7 +14,7 @@ Description: Serial and Joystick Connection
 '''
 
 class UMDSerial():
-    port_name = "/dev/aten"
+    port_name = "/dev/serial0"
 
     def __init__(self):
         self.__serial = None
