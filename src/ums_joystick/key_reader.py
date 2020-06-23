@@ -206,8 +206,34 @@ class JoystickReader(object):
                                 brake_value = axis_val.to_bytes(2, byteorder="little", signed=False)
                                 self.__pt.brake_data[0] = brake_value[0]
                                 self.__pt.brake_data[1] = brake_value[1]
-                                self.__pt.speed_data[0] = 0
-                                self.__pt.speed_data[1] = 0
+
+                            # # excel
+                            # if axis == 'z':
+                            #     # 값을 32767로 나눠서 0 또는 1, -1 로 표시
+                            #     # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
+                            #     # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
+                            #     # 상태값(0, 1, -1)을 저장
+                            #     # 0 ~ 65534
+                            #     axis_val = int(value) + 32767
+                            #     # print("%s: %.3f \t" % (axis, axis_val), end="")
+                            #     speed_value = axis_val.to_bytes(2, byteorder="little", signed=False)
+                            #     self.__pt.speed_data[0] = speed_value[0]
+                            #     self.__pt.speed_data[1] = speed_value[1]
+
+                            # # brake
+                            # elif axis == 'rz':
+                            #     # 값을 32767로 나눠서 0 또는 1, -1 로 표시
+                            #     # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
+                            #     # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
+                            #     # 상태값(0, 1, -1)을 저장
+                            #     # 0 ~ 65534
+                            #     axis_val = int(value) + 32767
+                            #     # print("%s: %.3f \t" % (axis, axis_val), end="")
+                            #     brake_value = axis_val.to_bytes(2, byteorder="little", signed=False)
+                            #     self.__pt.brake_data[0] = brake_value[0]
+                            #     self.__pt.brake_data[1] = brake_value[1]
+                            #     self.__pt.speed_data[0] = 0
+                            #     self.__pt.speed_data[1] = 0
 
                             # steer
                             elif axis == 'rx':
