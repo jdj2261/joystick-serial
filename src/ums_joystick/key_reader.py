@@ -158,7 +158,6 @@ class JoystickReader(object):
                                 # 누른 버튼의 정보를 가져옴
                                 # print(result_button)
                             
-
                                 if result_button == 'OFF' :
                                     self.__ESTOP = 'OFF'
                                 elif result_button == 'ON' :
@@ -178,6 +177,10 @@ class JoystickReader(object):
                             steer_value = [0x00, 0x00]
                             exp_value   = [0x00,0x00]
                             
+                            '''
+                            v 1.0.0 --> excel, brake 동시에 눌려지면 안됨.
+                            excel 값 exp 이용 (점점 증가할 수 있도록)
+                            '''
                             # excel
                             if axis == 'z':
                                 # 값을 32767로 나눠서 0 또는 1, -1 로 표시
@@ -191,8 +194,8 @@ class JoystickReader(object):
                                 self.__pt.speed_data[0] = speed_value[0]
                                 self.__pt.speed_data[1] = speed_value[1]
 
-                            # break
-                            if axis == 'rz':
+                            # brake
+                            elif axis == 'rz':
                                 # 값을 32767로 나눠서 0 또는 1, -1 로 표시
                                 # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
                                 # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
@@ -200,16 +203,44 @@ class JoystickReader(object):
                                 # 0 ~ 65534
                                 axis_val = int(value) + 32767
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
-                                break_value = axis_val.to_bytes(2, byteorder="little", signed=False)
-                                self.__pt.break_data[0] = break_value[0]
-                                self.__pt.break_data[1] = break_value[1]
-                            
+                                brake_value = axis_val.to_bytes(2, byteorder="little", signed=False)
+                                self.__pt.brake_data[0] = brake_value[0]
+                                self.__pt.brake_data[1] = brake_value[1]
+
+                            # # excel
+                            # if axis == 'z':
+                            #     # 값을 32767로 나눠서 0 또는 1, -1 로 표시
+                            #     # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
+                            #     # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
+                            #     # 상태값(0, 1, -1)을 저장
+                            #     # 0 ~ 65534
+                            #     axis_val = int(value) + 32767
+                            #     # print("%s: %.3f \t" % (axis, axis_val), end="")
+                            #     speed_value = axis_val.to_bytes(2, byteorder="little", signed=False)
+                            #     self.__pt.speed_data[0] = speed_value[0]
+                            #     self.__pt.speed_data[1] = speed_value[1]
+
+                            # # brake
+                            # elif axis == 'rz':
+                            #     # 값을 32767로 나눠서 0 또는 1, -1 로 표시
+                            #     # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
+                            #     # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
+                            #     # 상태값(0, 1, -1)을 저장
+                            #     # 0 ~ 65534
+                            #     axis_val = int(value) + 32767
+                            #     # print("%s: %.3f \t" % (axis, axis_val), end="")
+                            #     brake_value = axis_val.to_bytes(2, byteorder="little", signed=False)
+                            #     self.__pt.brake_data[0] = brake_value[0]
+                            #     self.__pt.brake_data[1] = brake_value[1]
+                            #     self.__pt.speed_data[0] = 0
+                            #     self.__pt.speed_data[1] = 0
+
                             # steer
                             elif axis == 'rx':
                                 axis_val = int(value)
                                 if axis_val == 0:
                                     exp_val = 0
-                                else :     
+                                else:     
                                     exp_val = int((pow((axis_val/32767),2) * 32767 * (axis_val / abs(axis_val))))
                                 # print("axis_val : {0}, exp_val : {1}".format(axis_val,int(exp_val)))
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
