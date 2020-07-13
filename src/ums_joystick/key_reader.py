@@ -268,7 +268,7 @@ class JoystickReader(object):
                 except OSError:
                     self.reconect()
                 except IndexError:
-                    self.reconect()
+                    pass
                 except KeyboardInterrupt:
                     t.join()
                     print(" ctrl + c pressed !!")

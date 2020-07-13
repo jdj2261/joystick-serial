@@ -6,6 +6,7 @@ Created Date: May 15. 2020
 Copyright: UNMAND SOLUTION
 Author: Dae Jong Jin 
 Description: Logitech joystick Serial Main Code
+Revise : 270 line in key_reader.py --> IndexError (reconnect에서 pass로 수정)
 '''
 
 import sys, os, time, threading
