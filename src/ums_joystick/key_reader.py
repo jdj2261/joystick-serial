@@ -72,6 +72,11 @@ class JoystickReader(object):
         js_name = buf.tobytes().rstrip(b'\x00').decode('utf-8') # 0x00 비어있는 값 제거 
         print('Device name: %s' % js_name)
 
+        if "IFYOO" in js_name:
+            return False
+        else:
+            return True
+
     def axis_read(self):
         # 드라이버로부터 축 개수 가져오기
         buf = array.array('B', [0])
@@ -267,8 +272,8 @@ class JoystickReader(object):
                 # 조이스틱 연결이 끊어지면 재 연결 시도
                 except OSError:
                     self.reconect()
-                except IndexError:
-                    pass
+                except IndexError as e:
+                    print (e)
                 except KeyboardInterrupt:
                     t.join()
                     print(" ctrl + c pressed !!")
