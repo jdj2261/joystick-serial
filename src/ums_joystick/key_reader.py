@@ -17,6 +17,10 @@ from .names import axis_names, button_names
 from .protocol import PacketProtocol
 from src.ums_serial.writer import UMDSerialWriter
 
+# class Error(Exception):
+#     def __init__(self):
+
+
 class JoystickReader(object):
 
     axis_states = {}
@@ -65,6 +69,7 @@ class JoystickReader(object):
                 break
             sleep(1.0)
 
+
     def joy_name_read(self):
         # 드라이버로부터 조이스틱 이름 가져오기
         buf = array.array('B', [0] * 64)
@@ -72,10 +77,11 @@ class JoystickReader(object):
         js_name = buf.tobytes().rstrip(b'\x00').decode('utf-8') # 0x00 비어있는 값 제거 
         print('Device name: %s' % js_name)
 
-        if "IFYOO" in js_name:
-            return False
-        else:
+        if "Microsoft" in js_name:
             return True
+        else:
+            return False
+            
 
     def axis_read(self):
         # 드라이버로부터 축 개수 가져오기
@@ -162,7 +168,10 @@ class JoystickReader(object):
                             if value:
                                 # 누른 버튼의 정보를 가져옴
                                 # print(result_button)
-                            
+                                if button == 'mode' :
+                                    self.__ESTOP = 'ON'
+                                    raise Exception
+                                    
                                 if result_button == 'OFF' :
                                     self.__ESTOP = 'OFF'
                                 elif result_button == 'ON' :
@@ -182,10 +191,6 @@ class JoystickReader(object):
                             steer_value = [0x00, 0x00]
                             exp_value   = [0x00,0x00]
                             
-                            '''
-                            v 1.0.0 --> excel, brake 동시에 눌려지면 안됨.
-                            excel 값 exp 이용 (점점 증가할 수 있도록)
-                            '''
                             # excel
                             if axis == 'z':
                                 # 값을 32767로 나눠서 0 또는 1, -1 로 표시
@@ -199,8 +204,8 @@ class JoystickReader(object):
                                 self.__pt.speed_data[0] = speed_value[0]
                                 self.__pt.speed_data[1] = speed_value[1]
 
-                            # brake
-                            elif axis == 'rz':
+                            # break
+                            if axis == 'rz':
                                 # 값을 32767로 나눠서 0 또는 1, -1 로 표시
                                 # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
                                 # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
@@ -208,44 +213,16 @@ class JoystickReader(object):
                                 # 0 ~ 65534
                                 axis_val = int(value) + 32767
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
-                                brake_value = axis_val.to_bytes(2, byteorder="little", signed=False)
-                                self.__pt.brake_data[0] = brake_value[0]
-                                self.__pt.brake_data[1] = brake_value[1]
-
-                            # # excel
-                            # if axis == 'z':
-                            #     # 값을 32767로 나눠서 0 또는 1, -1 로 표시
-                            #     # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
-                            #     # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
-                            #     # 상태값(0, 1, -1)을 저장
-                            #     # 0 ~ 65534
-                            #     axis_val = int(value) + 32767
-                            #     # print("%s: %.3f \t" % (axis, axis_val), end="")
-                            #     speed_value = axis_val.to_bytes(2, byteorder="little", signed=False)
-                            #     self.__pt.speed_data[0] = speed_value[0]
-                            #     self.__pt.speed_data[1] = speed_value[1]
-
-                            # # brake
-                            # elif axis == 'rz':
-                            #     # 값을 32767로 나눠서 0 또는 1, -1 로 표시
-                            #     # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
-                            #     # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
-                            #     # 상태값(0, 1, -1)을 저장
-                            #     # 0 ~ 65534
-                            #     axis_val = int(value) + 32767
-                            #     # print("%s: %.3f \t" % (axis, axis_val), end="")
-                            #     brake_value = axis_val.to_bytes(2, byteorder="little", signed=False)
-                            #     self.__pt.brake_data[0] = brake_value[0]
-                            #     self.__pt.brake_data[1] = brake_value[1]
-                            #     self.__pt.speed_data[0] = 0
-                            #     self.__pt.speed_data[1] = 0
-
+                                break_value = axis_val.to_bytes(2, byteorder="little", signed=False)
+                                self.__pt.break_data[0] = break_value[0]
+                                self.__pt.break_data[1] = break_value[1]
+                            
                             # steer
                             elif axis == 'rx':
                                 axis_val = int(value)
                                 if axis_val == 0:
                                     exp_val = 0
-                                else:     
+                                else :     
                                     exp_val = int((pow((axis_val/32767),2) * 32767 * (axis_val / abs(axis_val))))
                                 # print("axis_val : {0}, exp_val : {1}".format(axis_val,int(exp_val)))
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
@@ -267,18 +244,24 @@ class JoystickReader(object):
                                 axis_val = int(value) / 32767
                                 if axis_val :
                                     self.__GEAR = 'GNEUTRAL'
-
                                            
                 # 조이스틱 연결이 끊어지면 재 연결 시도
                 except OSError:
                     self.reconect()
+                    sleep(0.5)
                 except IndexError as e:
                     print (e)
+                    self.__ESTOP = 'ON'
+                    self.reconect()
+                    sleep(0.5)
                 except KeyboardInterrupt:
                     t.join()
                     print(" ctrl + c pressed !!")
                     print("exit .. ")
                     exit(0)
+                except Exception:
+                    self.reconect()
+                    sleep(0.5)
 
         except (KeyboardInterrupt, SystemExit):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
