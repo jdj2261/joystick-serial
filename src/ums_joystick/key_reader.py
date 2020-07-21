@@ -204,7 +204,7 @@ class JoystickReader(object):
                                 self.__pt.speed_data[0] = speed_value[0]
                                 self.__pt.speed_data[1] = speed_value[1]
 
-                            # break
+                            # brake
                             if axis == 'rz':
                                 # 값을 32767로 나눠서 0 또는 1, -1 로 표시
                                 # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
@@ -213,9 +213,9 @@ class JoystickReader(object):
                                 # 0 ~ 65534
                                 axis_val = int(value) + 32767
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
-                                break_value = axis_val.to_bytes(2, byteorder="little", signed=False)
-                                self.__pt.break_data[0] = break_value[0]
-                                self.__pt.break_data[1] = break_value[1]
+                                brake_value = axis_val.to_bytes(2, byteorder="little", signed=False)
+                                self.__pt.brake_data[0] = brake_value[0]
+                                self.__pt.brake_data[1] = brake_value[1]
                             
                             # steer
                             elif axis == 'rx':
