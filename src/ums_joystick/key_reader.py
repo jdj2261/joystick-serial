@@ -46,6 +46,19 @@ class JoystickReader(object):
         self.__GEAR = 'GNEUTRAL'
         self.__WHEEL = 'WFORWARD'
         self.__isConnect_joy = True
+        self.__cnt = 0
+
+        self.current_value = [0x00, 0x00]
+        self.steer_value = [0x00, 0x00]
+        self.exp_value   = [0x00,0x00]
+        self.brake_value = [0x00, 0x00]
+        self.speed_val = 0
+        self.brake_val = 0
+        self.steer_val = 0
+        self.exp_val = 0
+        self.pre_val=0
+        self.current_val = 0
+        self.isthread = False
 
     def joy_check(self):
 
@@ -120,18 +133,96 @@ class JoystickReader(object):
             self.button_map.append(btn_name)
             self.button_states[btn_name] = 0
 
+    def test_thread(self):
+        # while True:
+        # self.current_val = self.pre_val
+        if self.pre_val < self.speed_val:
+
+            while self.current_val < self.speed_val:
+                self.current_val = self.current_val + 5000
+                if self.current_val > 60000 :
+                    self.current_val = 60000
+                # print(self.current_val, end=" ")
+                self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
+                sleep(0.01)
+            # self.current_val = self.speed_val
+        elif self.pre_val > self.speed_val:
+            
+            while self.current_val > self.speed_val:
+                self.current_val = self.current_val - 3500
+                if self.pre_val == 0:
+                    self.current_val = self.current_val - 300
+                if self.current_val < 0:
+                    self.current_val = 0
+                # print(self.current_val, end=" ")
+                self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
+                sleep(0.01)
+
+        else:
+            self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
+            # self.current_val = 0
+            
+
     def sendpacket_thread(self):
         
         while True:        # alive count (0 ~ 255)
             # send packet
             if self.__isConnect_joy:
                 self.__pt.count_alive()
+
+                speed_value = [0x00, 0x00]
+                if self.pre_val != self.speed_val :
+                    if abs(self.pre_val-self.speed_val) > 100 :
+                        # self.current_val = self.pre_val
+                        t = Thread(target=self.test_thread)
+                        t.daemon = True
+                        t.start()
+                        self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
+                        self.isthread = False
+
+                    elif abs(self.pre_val-self.speed_val) < 100 :
+                        if not self.isthread :
+                            print("**** speed_val ****")
+                            self.current_value = self.speed_val.to_bytes(2, byteorder="little", signed=False)
+                        else:
+                            print("**** current_val ****")
+                            self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
+                else:
+                    pass
+                    # print("ddd")
+
+                    # else :
+                    #     print("test")
+                    #     self.current_value = self.speed_val.to_bytes(2, byteorder="little", signed=False)
+                # self.current_val = self.pre_val
+                self.brake_value = self.brake_val.to_bytes(2, byteorder="little", signed=False)
+                self.steer_value = self.steer_val.to_bytes(2, byteorder="little", signed=True)
+                self.exp_value = self.exp_val.to_bytes(2, byteorder="little", signed=True)
+
+                self.__pt.speed_data[0] = self.current_value[0]
+                self.__pt.speed_data[1] = self.current_value[1]
+                self.__pt.brake_data[0] = self.brake_value[0]
+                self.__pt.brake_data[1] = self.brake_value[1]
+                self.__pt.steer_data[0] = self.steer_value[0]
+                self.__pt.steer_data[1] = self.steer_value[1]
+                self.__pt.steer_data[2] = self.exp_value[0]
+                self.__pt.steer_data[3] = self.exp_value[1]
+
+
                 packet = self.__pt.makepacket(ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
+
+                # print("current_val : {0}".format(self.current_val), end=" ")
+                
+                # print("pre_val : {0}".format(self.pre_val), end=" ")
+                # print("speed_val : {0}".format(self.speed_val))
+                # # print("current_val : {0}".format(self.current_val), end=" ")
                 print("packet : {0}".format(packet))
                 self.__writer.run(packet)
             else:
                 print("not joystick connect")
                 sleep(1.0)
+
+            self.pre_val = self.speed_val
             sleep(0.02) # 50Hz
 
 
@@ -140,8 +231,8 @@ class JoystickReader(object):
         # 키 이벤트 처리
         button = None
         axis = 0
-        axis_val = 0
-        exp_val = 0
+        # axis_val = 0
+        # exp_val = 0
         try:
             t = Thread(target=self.sendpacket_thread)
             t.daemon = True
@@ -187,9 +278,9 @@ class JoystickReader(object):
                         if type & 0x02:
                             # number로 해당 축의 이름 가져오기
                             axis = self.axis_map[number]
-                            speed_value = [0x00, 0x00]
-                            steer_value = [0x00, 0x00]
-                            exp_value   = [0x00,0x00]
+                            # speed_value = [0x00, 0x00]
+                            # steer_value = [0x00, 0x00]
+                            # exp_value   = [0x00,0x00]
                             
                             # excel
                             if axis == 'z':
@@ -198,11 +289,11 @@ class JoystickReader(object):
                                 # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
                                 # 상태값(0, 1, -1)을 저장
                                 # 0 ~ 65534
-                                axis_val = int(value) + 32767
+                                self.speed_val = int(value) + 32767
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
-                                speed_value = axis_val.to_bytes(2, byteorder="little", signed=False)
-                                self.__pt.speed_data[0] = speed_value[0]
-                                self.__pt.speed_data[1] = speed_value[1]
+                                # self.speed_value = self.speed_val.to_bytes(2, byteorder="little", signed=False)
+                                # self.__pt.speed_data[0] = self.speed_value[0]
+                                # self.__pt.speed_data[1] = self.speed_value[1]
 
                             # brake
                             if axis == 'rz':
@@ -211,27 +302,33 @@ class JoystickReader(object):
                                 # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
                                 # 상태값(0, 1, -1)을 저장
                                 # 0 ~ 65534
-                                axis_val = int(value) + 32767
+                                self.brake_val = int(value) + 32767
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
-                                brake_value = axis_val.to_bytes(2, byteorder="little", signed=False)
-                                self.__pt.brake_data[0] = brake_value[0]
-                                self.__pt.brake_data[1] = brake_value[1]
+                                # self.brake_value = self.brake_val.to_bytes(2, byteorder="little", signed=False)
+                                # self.__pt.brake_data[0] = self.brake_value[0]
+                                # self.__pt.brake_data[1] = self.brake_value[1]
                             
                             # steer
                             elif axis == 'rx':
-                                axis_val = int(value)
-                                if axis_val == 0:
-                                    exp_val = 0
+                                self.steer_val = int(value)
+                                if self.steer_val == 0:
+                                    self.exp_val = 0
                                 else :     
-                                    exp_val = int((pow((axis_val/32767),2) * 32767 * (axis_val / abs(axis_val))))
-                                # print("axis_val : {0}, exp_val : {1}".format(axis_val,int(exp_val)))
+                                    self.exp_val = int((pow((self.steer_val/32767),2) * 40000 * (self.steer_val / abs(self.steer_val))))
+                          
+                                if self.exp_val > 32000 :
+                                    self.exp_val = 32767
+                                elif self.exp_val < -32000:
+                                    self.exp_val = -32767
+                
+                                # print("steer_val : {0}, exp_val : {1}".format(self.steer_val,int(self.exp_val)))
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
-                                steer_value = axis_val.to_bytes(2, byteorder="little", signed=True)
-                                exp_value = exp_val.to_bytes(2, byteorder="little", signed=True)
-                                self.__pt.steer_data[0] = steer_value[0]
-                                self.__pt.steer_data[1] = steer_value[1]
-                                self.__pt.steer_data[2] = exp_value[0]
-                                self.__pt.steer_data[3] = exp_value[1]
+                                # self.steer_value = self.steer_val.to_bytes(2, byteorder="little", signed=True)
+                                # self.exp_value = self.exp_val.to_bytes(2, byteorder="little", signed=True)
+                                # self.__pt.steer_data[0] = self.steer_value[0]
+                                # self.__pt.steer_data[1] = self.steer_value[1]
+                                # self.__pt.steer_data[2] = self.exp_value[0]
+                                # self.__pt.steer_data[3] = self.exp_value[1]
 
                             elif axis == 'hat0y':
                                 axis_val = int(value) / 32767
@@ -259,9 +356,9 @@ class JoystickReader(object):
                     print(" ctrl + c pressed !!")
                     print("exit .. ")
                     exit(0)
-                except Exception:
-                    self.reconect()
-                    sleep(0.5)
+                # except Exception:
+                #     self.reconect()
+                #     sleep(0.5)
 
         except (KeyboardInterrupt, SystemExit):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
