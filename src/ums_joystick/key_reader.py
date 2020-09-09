@@ -139,7 +139,7 @@ class JoystickReader(object):
         if self.pre_val < self.speed_val:
 
             while self.current_val < self.speed_val:
-                self.current_val = self.current_val + 5000
+                self.current_val = self.current_val + 2000
                 if self.current_val > 60000 :
                     self.current_val = 60000
                 # print(self.current_val, end=" ")
@@ -149,14 +149,14 @@ class JoystickReader(object):
         elif self.pre_val > self.speed_val:
             
             while self.current_val > self.speed_val:
-                self.current_val = self.current_val - 3500
+                self.current_val = self.current_val - 5000
                 if self.pre_val == 0:
                     self.current_val = self.current_val - 300
                 if self.current_val < 0:
                     self.current_val = 0
                 # print(self.current_val, end=" ")
                 self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
-                sleep(0.01)
+                sleep(0.02)
 
         else:
             self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
