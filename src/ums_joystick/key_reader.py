@@ -80,7 +80,7 @@ class JoystickReader(object):
             if is_open == True:
                 print("조이스틱을 불러옵니다.")
                 break
-            sleep(1.0)
+            sleep(0.2)
 
 
     def joy_name_read(self):
@@ -219,8 +219,11 @@ class JoystickReader(object):
                 print("packet : {0}".format(packet))
                 self.__writer.run(packet)
             else:
+                self.speed_val = 0
+                self.current_val = 0
+                self.current_value = [0x00, 0x00]
                 print("not joystick connect")
-                sleep(1.0)
+                sleep(0.1)
 
             self.pre_val = self.speed_val
             sleep(0.02) # 50Hz
@@ -345,12 +348,12 @@ class JoystickReader(object):
                 # 조이스틱 연결이 끊어지면 재 연결 시도
                 except OSError:
                     self.reconect()
-                    sleep(0.5)
+                    sleep(0.2)
                 except IndexError as e:
                     print (e)
                     self.__ESTOP = 'ON'
                     self.reconect()
-                    sleep(0.5)
+                    sleep(0.2)
                 except KeyboardInterrupt:
                     t.join()
                     print(" ctrl + c pressed !!")
@@ -380,7 +383,7 @@ class JoystickReader(object):
         except:
             self.__isConnect_joy = False
             print("조이스틱을 다시 연결하세요..")
-        sleep(1)
+        sleep(0.2)
    
     def compare_button_data(self, data):
         buttons = {

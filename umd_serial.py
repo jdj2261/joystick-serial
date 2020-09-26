@@ -37,7 +37,7 @@ class UMDSerial():
                 break
             else :
                 print("시리얼 연결이 되었는지 확인해 주세요.")
-            time.sleep(1.0)
+            time.sleep(0.2)
 
     def open(self, port_name):
         try:
@@ -65,7 +65,7 @@ class UMDSerial():
             else:
                 print(" \n 조이스틱을 다시 연결해 주세요")
                 jr.joy_open()
-            time.sleep(2)
+            time.sleep(0.2)
 
 
     # def test_input(self):
