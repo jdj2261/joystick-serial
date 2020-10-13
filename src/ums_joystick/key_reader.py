@@ -221,7 +221,15 @@ class JoystickReader(object):
             else:
                 self.speed_val = 0
                 self.current_val = 0
+                self.brake_val = 0
+                self.steer_val = 0
+                self.exp_val = 0
+
                 self.current_value = [0x00, 0x00]
+                self.brake_value = [0x00, 0x00]
+                self.steer_value  = [0x00, 0x00]
+                self.exp_value  = [0x00, 0x00]
+
                 print("not joystick connect")
                 sleep(0.1)
 
