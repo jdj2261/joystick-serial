@@ -223,24 +223,27 @@ class JoystickReader(object):
                 print("packet : {0}".format(packet))
                 self.__writer.run(packet)
             else:
-                self.speed_val = 0
-                self.current_val = 0
-                self.result_val  = 0
-                self.brake_val = 0
-                self.steer_val = 0
-                self.exp_val = 0
-
-                self.current_value = [0x00, 0x00]
-                self.result_value = [0x00, 0x00]
-                self.brake_value = [0x00, 0x00]
-                self.steer_value = [0x00, 0x00]
-                self.exp_value = [0x00, 0x00]
+                self.reset_value()
 
                 print("not joystick connect")
                 sleep(0.1)
 
             self.pre_val = self.speed_val
             sleep(0.02)  # 50Hz
+
+    def reset_value(self):
+        self.speed_val = 0
+        self.current_val  = 0
+        self.result_val = 0
+        self.brake_val = 0
+        self.steer_val = 0
+        self.exp_val = 0
+
+        self.current_value = [0x00, 0x00]
+        self.reset_value = [0x00, 0x00]
+        self.brake_value = [0x00, 0x00]
+        self.steer_value  = [0x00, 0x00]
+        self.exp_value  = [0x00, 0x00]
 
     def joy_main_event(self):
         # Main event loop
