@@ -156,6 +156,8 @@ class JoystickReader(object):
                 if self.pre_val == 0:
                     self.current_val = self.current_val - 5000
                 # print(self.current_val, end=" ")
+                if self.current_val < 0:
+                    self.current_val = self.speed_val + self.APS_VAL
                 self.current_value = self.current_val.to_bytes(
                     2, byteorder="little", signed=False)
                 sleep(0.02)
