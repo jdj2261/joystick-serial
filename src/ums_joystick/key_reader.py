@@ -66,7 +66,6 @@ class JoystickReader(object):
         self.current_val =  self.speed_val + self.APS_VAL
         self.current_val2 = self.speed_val + self.APS_VAL
         self.current_test = self.speed_val + self.APS_VAL
-        self.isthread = False
 
     def joy_check(self):
 
@@ -252,7 +251,6 @@ class JoystickReader(object):
 
                         self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
                         self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
-                        self.isthread = False
                 else:
                     pass
 
