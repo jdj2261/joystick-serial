@@ -37,6 +37,8 @@ class JoystickReader(object):
     origin_axis_map = []
     origin_button_map = []
     APS_VAL = 5000
+    DELTA_PLUS = 100
+    DELTA_MINUS = 50
 
     def __init__(self,serial, port):
         self.__serial = serial
@@ -182,7 +184,7 @@ class JoystickReader(object):
     def test2_thread(self):
         if self.pre_val < self.speed_val:
             while self.current_val2 < self.speed_val:
-                self.current_val2 = self.current_val2 + 100
+                self.current_val2 = self.current_val2 + self.DELTA_PLUS
                 if self.current_val2 > 60000 :
                     self.current_val2 = 60000
                 # print(self.current_val, end=" ")
@@ -192,7 +194,7 @@ class JoystickReader(object):
         elif self.pre_val > self.speed_val:
             
             while self.current_val2 > self.speed_val:
-                self.current_val2 = self.current_val2 - 50
+                self.current_val2 = self.current_val2 - self.DELTA_MINUS
                 if self.pre_val == 0:
                     self.current_val2 = self.current_val2 - 5000
                 if self.current_val2 < 0:
