@@ -26,9 +26,8 @@ class UMDSerial():
     def waitPort(self):
 
         while(True) : 
-            # print(self.port_name)
-            self.__is_serial_connect = self.open(UMDSerial.port_name)
-
+            # self.__is_serial_connect = self.open(UMDSerial.port_name)
+            self.__is_serial_connect = True
   
             # 시리얼 연결이 되면
             if self.__is_serial_connect == True :
@@ -67,35 +66,9 @@ class UMDSerial():
                 jr.joy_open()
             time.sleep(0.2)
 
-
-    # def test_input(self):
-    #     while True:
-    #         test_str = input("True or False 입력 : ")
-    #         # test_str = bool(test_str)
-    #         if test_str.lower() == "true":
-    #             print("True")
-    #             self.is_input = True
-    #             return self.is_input
-    #             break
-    #         else :
-    #             pass
-    #             print("다시 입력 하세요.")
-
 if __name__ == "__main__":
     us = UMDSerial()
     print(" -- umd_serial test -- ")
     us.waitPort()
-    
-    # while True:
-        # us.test_input()
-        # us.waitPort()
-    # t1 = threading.Thread(target = us.waitPort, args="")
-    # t2 = threading.Thread(target = us.test_input, args="")
-
-    # t1.start()
-    # t2.start()
-
-    # t1.join()
-    # t2.join()
 
         
