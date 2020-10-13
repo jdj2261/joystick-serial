@@ -47,7 +47,7 @@ class PacketProtocol(object):
         self.X           = 0x58
         self.speed_data  = [0x00,0x00]
         self.brake_data  = [0x00,0x00]
-        self.steer_data  = [0x00,0x00, 0x00, 0x00]
+        self.steer_data  = [0x00,0x00,0x00,0x00]
         self.ALIVE       = 0x00
         self.CHECKSUM    = 0x00
         self.ETX0        = 0x0D
@@ -87,68 +87,3 @@ class PacketProtocol(object):
         self.ALIVE += 1
         if self.ALIVE >= 256 :
             self.ALIVE = 0
-
-#     def test_process(self):
-#         while True:
-#             pt.count_alive()
-#             # print('{0:02x}'.format(pt.ALIVE))
-#             result = pt.makepacket(WHEELMODE='WBACKWARD')
-#             print(result)   
-#             sleep(0.05)
-
-#     def test_f(self):
-
-#         t = Thread(target=self.test_process)
-#         t.daemon = True
-#         t.start()
-#         while True:
-#             stop_char=input("Enter 'q' to quit ")
-#             # print(t)
-#             if stop_char.lower() == "q":
-#                 # t.join()
-#                 print("pressed q")
-#                 exit(0)
-#                 break
-#             if stop_char.lower() == "u":
-#                 print("Input u")
-#                 self.ETX0 = 2
-#             if stop_char.lower() == "e":
-#                 print("Input u")
-#                 self.ETX0 = 3
-            
-# if __name__ == "__main__":
-#     pt = PacketProtocol()
-#     pt.test_f()
-    
-
-
-        # q.put(self.t, False)
-            ## do something else
-    
-        # speed_data = -1253
-        # steer_data = -1
-        # speed_data = speed_data.to_bytes(2, byteorder="little", signed=True)
-        # steer_data = steer_data.to_bytes(2, byteorder="little", signed=True)
-
-        # pt.steer_data[0] = steer_data[0]
-        # pt.steer_data[1] = steer_data[1]
-        # pt.speed_data[0] = speed_data[0]
-        # pt.speed_data[1] = speed_data[1]
-
-        # pt.count_alive()
-        # # print('{0:02x}'.format(pt.ALIVE))
-        # result = pt.makepacket(WHEELMODE='WBACKWARD')
-        # print(result)
-        # test = sum(result[3:10])
-        # checksum = pt.calc_checksum(result[3:10])
-        # check_checksum = test + checksum
-        # check_checksum = check_checksum & 0xFF
-        # test ="0x{:02x}".format(check_checksum)
-
-        # print("0x{:02x}".format(check_checksum))       
-        # sleep(0.05)
-
-
-        # print(pt.packet)
-        # print(pt.makepacket())
-

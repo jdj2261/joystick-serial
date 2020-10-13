@@ -7,80 +7,24 @@ Copyright: UNMAND SOLUTION
 Author: Dae Jong Jin 
 Description: Logitech Joystick key reader
 '''
-import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import time
-import numpy as np
-
+import matplotlib.pyplot as plt
+import sys
 import os, struct, array
 from time import sleep
 from fcntl import ioctl
-import sys
+
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 from threading import Thread
 from .names import axis_names, button_names
 from .protocol import PacketProtocol
+from .scope import Scope
 from src.ums_serial.writer import UMDSerialWriter
+
 
 # class Error(Exception):
 #     def __init__(self):
-
-# 스코프 클래스 정의
-class Scope(object):
-    
-    # 초기 설정
-    def __init__(self,
-                 ax,fn,
-                 xmax=10,ymax =10,
-                 xstart=0, ystart=0,
-                 title='Title',xlabel='X value',ylabel='Y value'):
-        
-        self.xmax = xmax #x축 길이
-        self.xstart = xstart #x축 시작점
-        self.ymax = ymax #y축 길이
-        self.ystart = ystart #y축 시작점
-
-        # 그래프 설정
-        self.ax = ax 
-        self.ax.set_xlim((self.xstart,self.xmax))
-        self.ax.set_ylim((self.ystart,self.ymax))
-        self.ax.set_title(title)
-        self.ax.set_xlabel(xlabel)
-        self.ax.set_ylabel(ylabel)
-
-        self.x = [0] # x축 정보 
-        self.y = [0] # y축 정보
-        self.value = 0 # 축 값
-        self.fn = fn
-        self.line, = ax.plot([],[])
-
-        self.ti = time.time() #현재시각
-        print("초기화 완료")
-
-    # 그래프 설정
-    def update(self, i):
-        # 시간차
-        tempo = time.time()-self.ti
-        self.ti = time.time() #시간 업데이트
-        
-        # 값 넣기
-        self.value = self.fn()# y값 함수 불러오기
-        self.y.append(self.value) #y값 넣기
-        self.x.append(tempo + self.x[-1]) #x값 넣기
-        self.line.set_data(self.x,self.y)
-
-        # 화면에 나타낼 x축 범위 업데이트
-        if self.x[-1] >= self.xstart + self.xmax :
-            #전체 x값중 반을 화면 옆으로 밀기
-            self.xstart = self.xstart + self.xmax/2
-            self.ax.set_xlim(self.xstart,self.xstart + self.xmax)
-
-            self.ax.figure.canvas.draw()
-
-        return (self.line, )
-
-
 
 class JoystickReader(object):
 
@@ -92,9 +36,9 @@ class JoystickReader(object):
     origin_button_states = {}  
     origin_axis_map = []
     origin_button_map = []
+    APS_VAL = 5000
 
     def __init__(self,serial, port):
-
         self.__serial = serial
         self.__port = port
         self.__num_buttons = None
@@ -110,6 +54,7 @@ class JoystickReader(object):
         self.__cnt = 0
 
         self.current_value = [0x00, 0x00]
+        self.current_value2 = [0x00, 0x00]
         self.steer_value = [0x00, 0x00]
         self.exp_value   = [0x00,0x00]
         self.brake_value = [0x00, 0x00]
@@ -118,7 +63,9 @@ class JoystickReader(object):
         self.steer_val = 0
         self.exp_val = 0
         self.pre_val=0
-        self.current_val = 0
+        self.current_val =  self.speed_val + self.APS_VAL
+        self.current_val2 = self.speed_val + self.APS_VAL
+        self.current_test = self.speed_val + self.APS_VAL
         self.isthread = False
 
     def joy_check(self):
@@ -155,7 +102,6 @@ class JoystickReader(object):
         else:
             return False
             
-
     def axis_read(self):
         # 드라이버로부터 축 개수 가져오기
         buf = array.array('B', [0])
@@ -194,11 +140,15 @@ class JoystickReader(object):
             self.button_states[btn_name] = 0
 
     def insert(self):
-        value = self.speed_val # 1~9 사이의 임의의 수를 Y값으로 함
+        value = self.speed_val 
         return value 
 
     def insert2(self):
-        value = self.current_val # 1~9 사이의 임의의 수를 Y값으로 함
+        value = self.current_val
+        return value 
+
+    def insert3(self):
+        value = self.current_test
         return value 
 
     def test_thread(self):
@@ -221,7 +171,7 @@ class JoystickReader(object):
                 if self.pre_val == 0:
                     self.current_val = self.current_val - 300
                 if self.current_val < 0:
-                    self.current_val = 0
+                    self.current_val = self.speed_val + self.APS_VAL
                 # print(self.current_val, end=" ")
                 self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
                 sleep(0.02)
@@ -230,21 +180,57 @@ class JoystickReader(object):
             self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
             # self.current_val = 0
 
+    def test2_thread(self):
+        if self.pre_val < self.speed_val:
+            while self.current_val2 < self.speed_val:
+                self.current_val2 = self.current_val2 + 100
+                if self.current_val2 > 60000 :
+                    self.current_val2 = 60000
+                # print(self.current_val, end=" ")
+                self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
+                sleep(0.01)
+            # self.current_val = self.speed_val
+        elif self.pre_val > self.speed_val:
+            
+            while self.current_val2 > self.speed_val:
+                self.current_val2 = self.current_val2 - 50
+                if self.pre_val == 0:
+                    self.current_val2 = self.current_val2 - 5000
+                if self.current_val2 < 0:
+                    self.current_val2 = self.speed_val + self.APS_VAL
+                # print(self.current_val, end=" ")
+                self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
+                sleep(0.02)
+
+        # else:
+        #     self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
+            # self.current_val = 0
+
     def plot_thread(self):
-        fig, ax = plt.subplots()
-        ax.grid(True)
+
+        fig = plt.figure(figsize=(10,8))     #figure(도표) 생성
+        # ax1 = plt.gca()
+        
+        ax1 = plt.subplot(311, xlim=(0, 50), ylim=(0, 1024))
+        ax2 = plt.subplot(312, xlim=(0, 50), ylim=(0, 1024))
+        ax3 = plt.subplot(313, xlim=(0, 50), ylim=(0, 1024))
+
+        # ax2 = ax1.twinx()
+        ax1.grid(True)
+        ax2.grid(True)
+        ax3.grid(True)
 
         # y축에 표현할 값을 반환해야하고 scope 객체 선언 전 선언해야함.
 
         # 객체 생성
-        scope = Scope(ax,self.insert, ystart = 0, ymax = 65535)
-        scope2 = Scope(ax,self.insert2, ystart = 0, ymax = 65535)
-            
+        scope = Scope(ax1,self.insert, ystart = 0, ymax = 65535, title = "origin", color='b')
+        scope2 = Scope(ax2,self.insert2, ystart = 0, ymax = 65535, title = "result", color='r')
+        scope3 = Scope(ax3,self.insert3, ystart = 0, ymax = 65535, title = "change", color='y')    
         # update 매소드 호출
         ani = animation.FuncAnimation(fig, scope.update,interval=10,blit=True)
-        # ani2 = animation.FuncAnimation(fig, scope2.update,interval=10,blit=True)
+        ani2 = animation.FuncAnimation(fig, scope2.update,interval=10,blit=True)
+        ani3 = animation.FuncAnimation(fig, scope3.update,interval=10,blit=True)
         plt.show()
-
 
     def sendpacket_thread(self):
         
@@ -254,31 +240,43 @@ class JoystickReader(object):
                 self.__pt.count_alive()
 
                 if self.pre_val != self.speed_val :
-                    if abs(self.pre_val-self.speed_val) > 100 :
+                    if abs(self.pre_val-self.speed_val) > 10 :
                         # self.current_val = self.pre_val
                         t = Thread(target=self.test_thread)
                         t.daemon = True
                         t.start()
-                        self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
-                        self.isthread = False
 
-                    elif abs(self.pre_val-self.speed_val) < 100 :
-                        if not self.isthread :
-                            print("**** speed_val ****")
-                            self.current_value = self.speed_val.to_bytes(2, byteorder="little", signed=False)
-                        else:
-                            print("**** current_val ****")
-                            self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
+                        t2 = Thread(target=self.test2_thread)
+                        t2.daemon = True
+                        t2.start()
+
+                        self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
+                        self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
+                        self.isthread = False
                 else:
                     pass
 
                 # self.current_val = self.pre_val
+
                 self.brake_value = self.brake_val.to_bytes(2, byteorder="little", signed=False)
                 self.steer_value = self.steer_val.to_bytes(2, byteorder="little", signed=True)
                 self.exp_value = self.exp_val.to_bytes(2, byteorder="little", signed=True)
 
-                self.__pt.speed_data[0] = self.current_value[0]
-                self.__pt.speed_data[1] = self.current_value[1]
+                if self.brake_val == 0:
+                    if self.current_val2 < self.APS_VAL:
+                        self.current_val2 = self.APS_VAL
+                    
+                    self.current_test = self.current_val2
+                else :
+                    self.current_test = 0
+
+                if self.__ESTOP == 'ON':
+                    self.current_test = 0
+
+                self.current_test_value = self.current_test.to_bytes(2, byteorder="little", signed=False)
+                
+                self.__pt.speed_data[0] = self.current_test_value[0]
+                self.__pt.speed_data[1] = self.current_test_value[1]
                 self.__pt.brake_data[0] = self.brake_value[0]
                 self.__pt.brake_data[1] = self.brake_value[1]
                 self.__pt.steer_data[0] = self.steer_value[0]
@@ -286,35 +284,36 @@ class JoystickReader(object):
                 self.__pt.steer_data[2] = self.exp_value[0]
                 self.__pt.steer_data[3] = self.exp_value[1]
 
-
                 packet = self.__pt.makepacket(ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
 
                 print("current_val : {0}".format(self.current_val), end=" ")
-                
+                print("current_test : {0}".format(self.current_test), end=" ")
                 print("pre_val : {0}".format(self.pre_val), end=" ")
                 print("speed_val : {0}".format(self.speed_val))
-                # print("current_val : {0}".format(self.current_val), end=" ")
                 print("packet : {0}".format(packet))
                 self.__writer.run(packet)
             else:
-
-                self.speed_val = 0
-                self.current_val = 0
-                self.brake_val = 0
-                self.steer_val = 0
-                self.exp_val = 0
-
-                self.current_value = [0x00, 0x00]
-                self.brake_value = [0x00, 0x00]
-                self.steer_value  = [0x00, 0x00]
-                self.exp_value  = [0x00, 0x00]
-
+                self.reset_value()
                 print("not joystick connect")
                 sleep(0.1)
 
             self.pre_val = self.speed_val
             sleep(0.02) # 50Hz
 
+    def reset_value(self):
+        self.speed_val = 0
+        self.current_val  = 0
+        self.current_val2 = 0
+        self.current_test = 0
+        self.brake_val = 0
+        self.steer_val = 0
+        self.exp_val = 0
+
+        self.current_value = [0x00, 0x00]
+        self.current_value2 = [0x00, 0x00]
+        self.brake_value = [0x00, 0x00]
+        self.steer_value  = [0x00, 0x00]
+        self.exp_value  = [0x00, 0x00]
 
     def joy_main_event(self):
         # Main event loop
@@ -341,7 +340,7 @@ class JoystickReader(object):
                     # 이벤트가 발생했다면
                     if evbuf:
                         # 시간, 값, 타입, 번호 등으로 가져옴
-                        time, value, type, number = struct.unpack('IhBB', evbuf)
+                        _, value, type, number = struct.unpack('IhBB', evbuf)
 
                         # type이 0x01 버튼이 눌렸거나 떨어졌을때이다.
                         if type & 0x01:
@@ -355,9 +354,7 @@ class JoystickReader(object):
                                 # 누른 버튼의 정보를 가져옴
                                 # print(result_button)
                                 if button == 'mode' :
-                                    self.__ESTOP = 'ON'
-                                    raise Exception
-                                    
+                                    self.__ESTOP = 'ON'                                    
                                 if result_button == 'OFF' :
                                     self.__ESTOP = 'OFF'
                                 elif result_button == 'ON' :
