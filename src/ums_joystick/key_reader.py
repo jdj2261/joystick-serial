@@ -240,7 +240,7 @@ class JoystickReader(object):
         self.exp_val = 0
 
         self.current_value = [0x00, 0x00]
-        self.reset_value = [0x00, 0x00]
+        self.result_value = [0x00, 0x00]
         self.brake_value = [0x00, 0x00]
         self.steer_value  = [0x00, 0x00]
         self.exp_value  = [0x00, 0x00]
