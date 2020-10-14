@@ -26,6 +26,19 @@ from src.ums_serial.writer import UMDSerialWriter
 # class Error(Exception):
 #     def __init__(self):
 
+
+"""
+10 /14 세종시 조종기 테스트
+
+이슈 1. 조종기 선 연결 불안정 (연결 선 후크 마모현상으로 자주 연결이 끊어지는 현상이 발생함.)
+이슈 2. 민감도 조절 (올라가는 속도, 내려가는 속도)
+이슈 3. 버튼 누른 상태에서 선 연결이 끊어지면 추후에 선 연결 시 전 값이 남아있어 출발할때 움직이는 현상 발생 --> 매인 컨트롤러 : VCU 보드 쪽 문제
+"""
+
+"""
+master --> write pass 주석해제 하기!!!!
+"""
+
 class JoystickReader(object):
 
     axis_states = {}
@@ -36,9 +49,9 @@ class JoystickReader(object):
     origin_button_states = {}  
     origin_axis_map = []
     origin_button_map = []
-    APS_VAL = 5000
-    DELTA_PLUS = 100
-    DELTA_MINUS = 50
+    APS_VAL = 2500#5000
+    DELTA_PLUS = 30#100
+    DELTA_MINUS = 10#50
 
     def __init__(self,serial, port):
         self.__serial = serial
@@ -194,14 +207,16 @@ class JoystickReader(object):
         elif self.pre_val > self.speed_val:
             
             while self.current_val2 > self.speed_val:
-                self.current_val2 = self.current_val2 - self.DELTA_MINUS
-                if self.pre_val == 0:
-                    self.current_val2 = self.current_val2 - 5000
+                if self.speed_val == 0:
+                    self.current_val2 = self.current_val2 - 100
+                else :
+                    self.current_val2 = self.current_val2 - self.DELTA_MINUS
+                
                 if self.current_val2 < 0:
                     self.current_val2 = self.speed_val + self.APS_VAL
                 # print(self.current_val, end=" ")
                 self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
-                sleep(0.02)
+                sleep(0.01)
 
         # else:
         #     self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
