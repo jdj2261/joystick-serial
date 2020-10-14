@@ -33,9 +33,9 @@ class JoystickReader(object):
     origin_button_states = {}
     origin_axis_map = []
     origin_button_map = []
-    APS_VAL = 5000
-    DELTA_PLUS = 100
-    DELTA_MINUS = 50
+    APS_VAL = 2500
+    DELTA_PLUS = 5
+    DELTA_MINUS = 10
 
     def __init__(self, serial, port):
 
@@ -170,7 +170,7 @@ class JoystickReader(object):
                 self.__pt.count_alive()
 
                 if self.pre_val != self.speed_val:
-                    if abs(self.pre_val-self.speed_val) > 100:
+                    if abs(self.pre_val-self.speed_val) > 10:
                         # self.current_val = self.pre_val
                         t = Thread(target=self.test_thread)
                         t.daemon = True
@@ -383,9 +383,9 @@ class JoystickReader(object):
                     print(" ctrl + c pressed !!")
                     print("exit .. ")
                     exit(0)
-                # except Exception:
-                #     self.reconect()
-                #     sleep(0.5)
+                except Exception:
+                    self.reconect()
+                    sleep(0.5)
 
         except (KeyboardInterrupt, SystemExit):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
