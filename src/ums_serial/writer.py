@@ -18,8 +18,8 @@ class UMDSerialWriter():
 
     def run(self, send_data):
         try:
-            # pass
-            self.__serial.write(serial.to_bytes(send_data))        
+            pass
+            # self.__serial.write(serial.to_bytes(send_data))        
             # self.__serial.write(bytearray(send_data))
             # self.__serial.write(result.encode('utf-8'))'zs
             # print("\tSend ---> {0} ".format(result.encode('utf-8')))

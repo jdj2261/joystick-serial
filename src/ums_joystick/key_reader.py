@@ -6,7 +6,16 @@ Created Date: May 15. 2020
 Copyright: UNMAND SOLUTION
 Author: Dae Jong Jin 
 Description: Logitech Joystick key reader
+
 '''
+"""
+*************** ISUE - UPDATE ***************
+10 /14 세종시 조종기 테스트
+이슈 1. 조종기 선 연결 불안정 (연결 선 후크 마모현상으로 자주 연결이 끊어지는 현상이 발생함.)
+이슈 2. 민감도 조절 (올라가는 속도, 내려가는 속도)
+이슈 3. 버튼 누른 상태에서 선 연결이 끊어지면 추후에 선 연결 시 전 값이 남아있어 출발할때 움직이는 현상 발생 --> 매인 컨트롤러 : VCU 보드 쪽 문제
+*********************************************
+"""
 
 import os
 import struct
@@ -14,7 +23,7 @@ import array
 from time import sleep
 from fcntl import ioctl
 import sys
-from threading import Thread
+from threading import Thread ,Condition
 from .names import axis_names, button_names
 from .protocol import PacketProtocol
 from src.ums_serial.writer import UMDSerialWriter
@@ -34,8 +43,8 @@ class JoystickReader(object):
     origin_axis_map = []
     origin_button_map = []
     APS_VAL = 2500
-    DELTA_PLUS = 5
-    DELTA_MINUS = 10
+    DELTA_PLUS = 250
+    DELTA_MINUS = 100
 
     def __init__(self, serial, port):
 
@@ -66,6 +75,7 @@ class JoystickReader(object):
         self.current_val = self.speed_val + self.APS_VAL
         self.result_val = self.speed_val + self.APS_VAL
 
+        self.condition = Condition()
     def joy_check(self):
 
         try:
@@ -139,29 +149,35 @@ class JoystickReader(object):
             self.button_states[btn_name] = 0
 
     def test_thread(self):
+        # self.condition.acquire()
         if self.pre_val < self.speed_val:
-            while self.current_val < self.speed_val:
-                self.current_val = self.current_val + self.DELTA_PLUS
+            while self.current_val <= self.speed_val:
+                if self.__GEAR == 'GFORWARD':
+                    self.current_val = self.current_val + self.DELTA_PLUS
+                elif self.__GEAR == 'GBACKWARD':
+                    self.current_val = self.current_val + ( self.DELTA_PLUS * 2)
+
                 if self.current_val > 60000:
                     self.current_val = 60000
                 # print(self.current_val, end=" ")
-                self.current_value = self.current_val.to_bytes(
-                    2, byteorder="little", signed=False)
-                sleep(0.01)
-            # self.current_val = self.speed_val
-        elif self.pre_val > self.speed_val:
+                self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
+                sleep(0.5)
 
-            while self.current_val > self.speed_val:
-                self.current_val = self.current_val - self.DELTA_MINUS
-                if self.pre_val == 0:
-                    self.current_val = self.current_val - 5000
-                # print(self.current_val, end=" ")
+        elif self.pre_val >= self.speed_val:
+
+            while self.current_val >= self.speed_val:
+                if self.__GEAR == 'GFORWARD':
+                    self.current_val = self.current_val - self.DELTA_MINUS
+                elif self.__GEAR == 'GBACKWARD':
+                    self.current_val = self.current_val - ( self.DELTA_MINUS * 2)
+
                 if self.current_val < 0:
                     self.current_val = self.speed_val + self.APS_VAL
-                self.current_value = self.current_val.to_bytes(
-                    2, byteorder="little", signed=False)
-                sleep(0.02)
 
+                self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
+                sleep(0.5)
+        # self.condition.notify()
+        # self.condition.release()
     def sendpacket_thread(self):
 
         while True:        # alive count (0 ~ 255)
@@ -169,23 +185,12 @@ class JoystickReader(object):
             if self.__isConnect_joy:
                 self.__pt.count_alive()
 
-                if self.pre_val != self.speed_val:
-                    if abs(self.pre_val-self.speed_val) > 10:
-                        # self.current_val = self.pre_val
-                        t = Thread(target=self.test_thread)
-                        t.daemon = True
-                        t.start()
-                        self.current_value = self.current_val.to_bytes(
-                            2, byteorder="little", signed=False)
+                t = Thread(target=self.test_thread)
+                t.daemon = True
+                t.start()
 
-                else:
-                    pass
-                    # print("ddd")
-
-                    # else :
-                    #     print("test")
-                    #     self.current_value = self.speed_val.to_bytes(2, byteorder="little", signed=False)
-                # self.current_val = self.pre_val
+                self.current_value = self.current_val.to_bytes(
+                    2, byteorder="little", signed=False)
                 self.brake_value = self.brake_val.to_bytes(
                     2, byteorder="little", signed=False)
                 self.steer_value = self.steer_val.to_bytes(
@@ -199,6 +204,7 @@ class JoystickReader(object):
 
                     self.result_val = self.current_val
                 else:
+                    self.current_val = 0
                     self.result_val = 0
 
                 if self.__ESTOP == 'ON':
@@ -217,11 +223,10 @@ class JoystickReader(object):
                 packet = self.__pt.makepacket(
                     ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
 
-                # print("current_val : {0}".format(self.current_val), end=" ")
-
+                print("result_val : {0}".format(self.result_val), end=" ")
                 # print("pre_val : {0}".format(self.pre_val), end=" ")
                 # print("speed_val : {0}".format(self.speed_val))
-                # # print("current_val : {0}".format(self.current_val), end=" ")
+
                 print("packet : {0}".format(packet))
                 self.__writer.run(packet)
             else:
