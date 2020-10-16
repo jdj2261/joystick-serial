@@ -50,8 +50,8 @@ class JoystickReader(object):
     origin_axis_map = []
     origin_button_map = []
     APS_VAL = 2500#5000
-    DELTA_PLUS = 30#100
-    DELTA_MINUS = 10#50
+    DELTA_PLUS = 250#100
+    DELTA_MINUS = 100#50
 
     def __init__(self,serial, port):
         self.__serial = serial
@@ -172,11 +172,11 @@ class JoystickReader(object):
 
             while self.current_val < self.speed_val:
                 self.current_val = self.current_val + 2000
-                if self.current_val > 60000 :
+                if self.current_val > 60000:
                     self.current_val = 60000
                 # print(self.current_val, end=" ")
                 self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
-                sleep(0.01)
+                sleep(0.1)
             # self.current_val = self.speed_val
         elif self.pre_val > self.speed_val:
             
@@ -188,7 +188,7 @@ class JoystickReader(object):
                     self.current_val = self.speed_val + self.APS_VAL
                 # print(self.current_val, end=" ")
                 self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
-                sleep(0.02)
+                sleep(0.2)
 
         else:
             self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
@@ -196,31 +196,33 @@ class JoystickReader(object):
 
     def test2_thread(self):
         if self.pre_val < self.speed_val:
-            while self.current_val2 < self.speed_val:
-                self.current_val2 = self.current_val2 + self.DELTA_PLUS
-                if self.current_val2 > 60000 :
+            while self.current_val2 <= self.speed_val:
+                if self.__GEAR == 'GFORWARD':
+                    self.current_val2 = self.current_val2 + self.DELTA_PLUS
+                elif self.__GEAR == 'GBACKWARD':
+                    self.current_val2 = self.current_val2 + ( self.DELTA_PLUS * 2)
+
+                if self.current_val2 >= 60000 :
                     self.current_val2 = 60000
                 # print(self.current_val, end=" ")
                 self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
-                sleep(0.01)
+                sleep(0.5)
             # self.current_val = self.speed_val
-        elif self.pre_val > self.speed_val:
+        elif self.pre_val >= self.speed_val:
             
-            while self.current_val2 > self.speed_val:
-                if self.speed_val == 0:
-                    self.current_val2 = self.current_val2 - 100
-                else :
+            while self.current_val2 >= self.speed_val:
+                if self.__GEAR == 'GFORWARD':
                     self.current_val2 = self.current_val2 - self.DELTA_MINUS
-                
+                elif self.__GEAR == 'GBACKWARD':
+                    self.current_val2 = self.current_val2 - ( self.DELTA_MINUS * 2)
+
+                self.current_val2 = self.current_val2 - self.DELTA_MINUS
+
                 if self.current_val2 < 0:
                     self.current_val2 = self.speed_val + self.APS_VAL
                 # print(self.current_val, end=" ")
                 self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
-                sleep(0.01)
-
-        # else:
-        #     self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
-            # self.current_val = 0
+                sleep(0.5)
 
     def plot_thread(self):
 
@@ -255,21 +257,21 @@ class JoystickReader(object):
             if self.__isConnect_joy:
                 self.__pt.count_alive()
 
-                if self.pre_val != self.speed_val :
-                    if abs(self.pre_val-self.speed_val) > 10 :
+                # if self.pre_val != self.speed_val :
+                #     if abs(self.pre_val-self.speed_val) > 10 :
                         # self.current_val = self.pre_val
-                        t = Thread(target=self.test_thread)
-                        t.daemon = True
-                        t.start()
+                t = Thread(target=self.test_thread)
+                t.daemon = True
+                t.start()
 
-                        t2 = Thread(target=self.test2_thread)
-                        t2.daemon = True
-                        t2.start()
+                t2 = Thread(target=self.test2_thread)
+                t2.daemon = True
+                t2.start()
 
-                        self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
-                        self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
-                else:
-                    pass
+                self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
+                self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
+                # else:
+                #     pass
 
                 # self.current_val = self.pre_val
 
@@ -277,13 +279,20 @@ class JoystickReader(object):
                 self.steer_value = self.steer_val.to_bytes(2, byteorder="little", signed=True)
                 self.exp_value = self.exp_val.to_bytes(2, byteorder="little", signed=True)
 
+                # brake 잡지 않은 상태 --> APS 해제
                 if self.brake_val == 0:
                     if self.current_val2 < self.APS_VAL:
                         self.current_val2 = self.APS_VAL
                     
                     self.current_test = self.current_val2
+                # 잡으면 APS 해제
                 else :
+                    # self.current_val2 = 0
                     self.current_test = 0
+
+                print(" TEST : {}".format(self.current_test))
+                    
+
 
                 if self.__ESTOP == 'ON':
                     self.current_test = 0
