@@ -6,7 +6,6 @@ Created Date: May 15. 2020
 Copyright: UNMAND SOLUTION
 Author: Dae Jong Jin 
 Description: Logitech Joystick key reader
-
 '''
 """
 *************** ISUE - UPDATE ***************
@@ -174,7 +173,6 @@ class JoystickReader(object):
                 # 액셀 최댓값 설정 (60000)
                 if self.current_val > self.ACCEL_MAX:
                     self.current_val = self.ACCEL_MAX
-       
                 sleep(0.02)
         
         # accel button을 뗄 경우
