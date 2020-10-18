@@ -14,7 +14,7 @@ Data ordering : Little Endian
 
 Data Transfer Rate : 50Hz (0.02 ms) 
 
-![image-20201018112639933](/Users/jindaejong/Library/Application Support/typora-user-images/image-20201018112639933.png)
+<img width="964" alt="protocol" src="https://user-images.githubusercontent.com/35681273/96358150-f02c1f00-113e-11eb-94fb-4b5fd8878e36.png">
 
 
 
