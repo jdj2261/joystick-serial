@@ -242,6 +242,7 @@ class JoystickReader(object):
                     self.__pt.steer_data[2] = self.exp_value[0]
                     self.__pt.steer_data[3] = self.exp_value[1]
 
+                    # packet 보내기
                     packet = self.__pt.makepacket(
                         ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
                     self.__writer.run(packet)
@@ -253,7 +254,7 @@ class JoystickReader(object):
                 else:
                     self.reset_value()
                     print("not joystick connect")
-                    sleep(0.1)
+                    sleep(0.5)
 
                 self.pre_val = self.accel_val
                 sleep(0.02)  # 50Hz
