@@ -7,7 +7,7 @@ class Scope(object):
     # 초기 설정
     def __init__(self,
                  ax,fn,
-                 xmax=10,ymax =10,
+                 xmax=20,ymax =10,
                  xstart=0, ystart=0,
                  title='Title',xlabel='X value',ylabel='Y value',
                  color = 'b'):

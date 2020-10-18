@@ -52,6 +52,7 @@ class JoystickReader(object):
     APS_VAL = 2500#5000
     DELTA_PLUS = 250#100
     DELTA_MINUS = 250#50
+    STEER_PARAM = 100
 
     def __init__(self,serial, port):
         self.__serial = serial
@@ -81,6 +82,8 @@ class JoystickReader(object):
         self.current_val =  self.speed_val + self.APS_VAL
         self.current_val2 = self.speed_val + self.APS_VAL
         self.current_test = self.speed_val + self.APS_VAL
+
+        self.test = 0
 
         self.condition = Condition()
 
@@ -159,21 +162,21 @@ class JoystickReader(object):
         value = self.speed_val 
         return value 
 
-    def insert2(self):
-        value = self.current_test   
-        return value 
-
-    def insert3(self):
-        value = self.current_val
-        return value 
-
     # def insert2(self):
-    #     value = self.exp_val
+    #     value = self.current_test   
     #     return value 
 
     # def insert3(self):
-    #     value = self.steer_val
+    #     value = self.current_val
     #     return value 
+
+    def insert2(self):
+        value = self.exp_val
+        return value 
+
+    def insert3(self):
+        value = self.steer_val
+        return value 
 
     def test_thread(self):
         while True:
@@ -299,10 +302,9 @@ class JoystickReader(object):
 
                 packet = self.__pt.makepacket(ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
 
-                print("current_val : {0}".format(self.current_val), end=" ")
-                print("current_test : {0}".format(self.current_test), end=" ")
-                print("exp_val : {0}".format(self.exp_val), end=" ")
-                print("speed_val : {0}".format(self.speed_val))
+                print("accel val : {0}".format(self.current_test), end=" ")
+                print("steer val : {0}".format(self.steer_val), end=" ")
+                print("exp val : {0}".format(self.exp_val), end=" ")
                 print("packet : {0}".format(packet))
                 self.__writer.run(packet)
             else:
@@ -397,10 +399,7 @@ class JoystickReader(object):
                             # excel
                             if axis == 'z':
                                 """
-                                값을 32767로 나눠서 0 또는 1, -1 로 표시
-                                축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
-                                0보다 큰지 작은지 0인지를 구분하기 위함이다.
-                                상태값(0, 1, -1)을 저장
+                                값을 32767로 나눠서 0 또는STEER_PARAM
                                 0 ~ 65534
                                 """
                                 self.speed_val = int(value) + 32767
@@ -427,16 +426,23 @@ class JoystickReader(object):
                             # steer
                             elif axis == 'rx':
                                 self.steer_val = int(value)
+
                                 if self.steer_val == 0:
                                     self.exp_val = 0
                                 else :     
                                     self.exp_val = int((pow((self.steer_val/32767),2) * 32767 * (self.steer_val / abs(self.steer_val))))
-                                    self.exp_val = (self.exp_val // 10) * 10
-                          
-                                if self.exp_val > 32000 :
-                                    self.exp_val = 32767
-                                elif self.exp_val < -32000:
-                                    self.exp_val = -32767
+                                    self.exp_val = self.exp_val / 32767
+                                    self.exp_val = pow(self.exp_val, 3) * 32767
+
+                                    if self.exp_val < self.STEER_PARAM:
+                                        self.exp_val = int(self.exp_val)
+                                    else:   
+                                        self.exp_val  = int(self.exp_val  // self.STEER_PARAM) * self.STEER_PARAM
+
+                                if self.exp_val  > 32000 :
+                                    self.exp_val  = 32000
+                                elif self.exp_val  < -32000:
+                                    self.exp_val  = -32000
                 
                                 # print("steer_val : {0}, exp_val : {1}".format(self.steer_val,int(self.exp_val)))
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
