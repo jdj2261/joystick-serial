@@ -25,7 +25,7 @@ import array
 from time import sleep
 from fcntl import ioctl
 import sys
-from threading import Thread, Condition
+from threading import Thread, Condition, Semaphore
 from .names import axis_names, button_names
 from .protocol import PacketProtocol
 from src.ums_serial.writer import UMDSerialWriter
@@ -158,111 +158,118 @@ class JoystickReader(object):
 
     def control_thread(self):
         # 상태를 잠금으로 변경 후 즉시 반환
-        self.condition.acquire()
+        while True :
+            self.condition.acquire()
+            # accel button을 누를 경우
+            if self.pre_val < self.accel_val:
+                # accel axis value가 될 때 까지 0.02초 마다
+                while self.current_val <= self.accel_val:
+                    # GEAR가 전진일 경우 DELTA PLUS 만큼 증가
+                    if self.__GEAR == 'GFORWARD':
+                        self.current_val = self.current_val + self.DELTA_PLUS
+                    # GEAR가 후진일 경우 DELTA PLUS * 2 만큼 증가
+                    elif self.__GEAR == 'GBACKWARD':
+                        self.current_val = self.current_val + (self.DELTA_PLUS * 2)
+                    # 액셀 최댓값 설정 (60000)
+                    if self.current_val > self.ACCEL_MAX:
+                        self.current_val = self.ACCEL_MAX
+                    sleep(0.02)
+            
+            # accel button을 뗄 경우
+            elif self.pre_val >= self.accel_val:
+                while self.current_val >= self.accel_val:
+                    if self.__GEAR == 'GFORWARD':
+                        self.current_val = self.current_val - self.DELTA_MINUS
+                    elif self.__GEAR == 'GBACKWARD':
+                        self.current_val = self.current_val - (self.DELTA_MINUS * 2)                   
+                    # if self.accel_val == 0:
+                    #     self.current_val = self.current_val - 3000
+                    # print(self.current_val, end=" ")
+                    if self.current_val < 0:
+                        self.current_val = self.accel_val + self.APS_VAL
+                    sleep(0.02)
+            
+            self.condition.notify()
+            # 쓰레드 잠김 해제
+            self.condition.release()
 
-        # accel button을 누를 경우
-        if self.pre_val < self.accel_val:
-            # accel axis value가 될 때 까지 0.02초 마다
-            while self.current_val <= self.accel_val:
-                # GEAR가 전진일 경우 DELTA PLUS 만큼 증가
-                if self.__GEAR == 'GFORWARD':
-                    self.current_val = self.current_val + self.DELTA_PLUS
-                # GEAR가 후진일 경우 DELTA PLUS * 2 만큼 증가
-                elif self.__GEAR == 'GBACKWARD':
-                    self.current_val = self.current_val + (self.DELTA_PLUS * 2)
-                # 액셀 최댓값 설정 (60000)
-                if self.current_val > self.ACCEL_MAX:
-                    self.current_val = self.ACCEL_MAX
-                sleep(0.02)
-        
-        # accel button을 뗄 경우
-        elif self.pre_val >= self.accel_val:
-            while self.current_val >= self.accel_val:
-                if self.__GEAR == 'GFORWARD':
-                    self.current_val = self.current_val - self.DELTA_MINUS
-                elif self.__GEAR == 'GBACKWARD':
-                    self.current_val = self.current_val - (self.DELTA_MINUS * 2)                   
-                # if self.accel_val == 0:
-                #     self.current_val = self.current_val - 3000
-                # print(self.current_val, end=" ")
-                if self.current_val < 0:
-                    self.current_val = self.accel_val + self.APS_VAL
-                sleep(0.02)
-        
-        self.condition.notify()
-        # 쓰레드 잠김 해제
-        self.condition.release()
 
     def sendpacket_thread(self):
 
-        while True:        # alive count (0 ~ 255)
-            # self.condition.acquire()
-            # self.condition.wait(.02)
-            # send packet
-            if self.__isConnect_joy:
-                self.__pt.count_alive()
-                # 2중 스레드 시작
-                try:
-                    t = Thread(target=self.control_thread)
-                    t.daemon = True
-                    t.start()
-                # 에러 무시
-                except :
-                    pass
+        try:
+            control_t = Thread(target=self.control_thread)
+            control_t.daemon = True
+            control_t.start()
+            while True:        # alive count (0 ~ 255)
+                # send packet
 
-                # brake 값 0일 경우
-                if self.brake_val == 0:
-                    # 현재 액셀은 APS_VAL
-                    # accel value 최솟값 설정
-                    if self.current_val < self.APS_VAL:
-                        self.current_val = self.APS_VAL
-                    self.speed_val = self.current_val
-                # 0이 아닐 경우
+                if self.__isConnect_joy:
+                    self.__pt.count_alive()
+                    # 2중 스레드 시작
+
+                    # try:
+
+                    # 에러 무시
+                    # except Exception as e:
+                    #     print(e)
+                        # pass
+
+                    # brake 값 0일 경우
+                    if self.brake_val == 0:
+                        # 현재 액셀은 APS_VAL
+                        # accel value 최솟값 설정
+                        if self.current_val < self.APS_VAL:
+                            self.current_val = self.APS_VAL
+                        self.speed_val = self.current_val
+                    # 0이 아닐 경우
+                    else:
+                        # speed value 0
+                        self.current_val = 0
+                        self.speed_val = 0
+
+                    # ESTOP 걸릴 경우 
+                    if self.__ESTOP == 'ON':
+                        # speed value 0
+                        self.speed_val = 0
+
+                    self.speed_value = self.speed_val.to_bytes(
+                        2, byteorder="little", signed=False)
+                    self.brake_value = self.brake_val.to_bytes(
+                        2, byteorder="little", signed=False)
+                    self.steer_value = self.steer_val.to_bytes(
+                        2, byteorder="little", signed=True)
+                    self.exp_value = self.exp_val.to_bytes(
+                        2, byteorder="little", signed=True)
+
+                    self.__pt.speed_data[0] = self.speed_value[0]
+                    self.__pt.speed_data[1] = self.speed_value[1]
+                    self.__pt.brake_data[0] = self.brake_value[0]
+                    self.__pt.brake_data[1] = self.brake_value[1]
+                    self.__pt.steer_data[0] = self.steer_value[0]
+                    self.__pt.steer_data[1] = self.steer_value[1]
+                    self.__pt.steer_data[2] = self.exp_value[0]
+                    self.__pt.steer_data[3] = self.exp_value[1]
+
+                    packet = self.__pt.makepacket(
+                        ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
+                    self.__writer.run(packet)
+
+                    print("speed_val : {0} ".format(self.speed_val), end=" ")
+                    print("steer_val : {0} ".format(self.steer_val), end=" ")
+                    print("packet : {0}".format(packet))
+
                 else:
-                    # speed value 0
-                    self.current_val = 0
-                    self.speed_val = 0
+                    self.reset_value()
+                    print("not joystick connect")
+                    sleep(0.1)
 
-                # ESTOP 걸릴 경우 
-                if self.__ESTOP == 'ON':
-                    # speed value 0
-                    self.speed_val = 0
-
-                self.speed_value = self.speed_val.to_bytes(
-                    2, byteorder="little", signed=False)
-                self.brake_value = self.brake_val.to_bytes(
-                    2, byteorder="little", signed=False)
-                self.steer_value = self.steer_val.to_bytes(
-                    2, byteorder="little", signed=True)
-                self.exp_value = self.exp_val.to_bytes(
-                    2, byteorder="little", signed=True)
-
-                self.__pt.speed_data[0] = self.speed_value[0]
-                self.__pt.speed_data[1] = self.speed_value[1]
-                self.__pt.brake_data[0] = self.brake_value[0]
-                self.__pt.brake_data[1] = self.brake_value[1]
-                self.__pt.steer_data[0] = self.steer_value[0]
-                self.__pt.steer_data[1] = self.steer_value[1]
-                self.__pt.steer_data[2] = self.exp_value[0]
-                self.__pt.steer_data[3] = self.exp_value[1]
-
-                packet = self.__pt.makepacket(
-                    ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
-                self.__writer.run(packet)
-
-                print("speed_val : {0} ".format(self.speed_val), end=" ")
-                print("steer_val : {0} ".format(self.steer_val), end=" ")
-                print("packet : {0}".format(packet))
-
-            else:
-                self.reset_value()
-                print("not joystick connect")
-                sleep(0.1)
-                            
-            # self.condition.release()
-            self.pre_val = self.accel_val
-            sleep(0.02)  # 50Hz
-
+                self.pre_val = self.accel_val
+                sleep(0.02)  # 50Hz
+        except KeyboardInterrupt:
+            control_t.join()
+        except Exception as e:
+            print(e)
+            
     def reset_value(self):
         self.accel_val = 0
         self.current_val  = 0
@@ -283,6 +290,7 @@ class JoystickReader(object):
         axis = 0
         # axis_val = 0
         # exp_val = 0
+
         try:
             t = Thread(target=self.sendpacket_thread)
             t.daemon = True
