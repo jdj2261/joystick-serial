@@ -160,13 +160,12 @@ class JoystickReader(object):
         return value 
 
     def insert2(self):
-        value = self.current_val
-        return value 
-
-    def insert3(self):
         value = self.current_test   
         return value 
 
+    def insert3(self):
+        value = self.current_val
+        return value 
 
     # def insert2(self):
     #     value = self.exp_val
@@ -177,70 +176,42 @@ class JoystickReader(object):
     #     return value 
 
     def test_thread(self):
-        # while True:
-        # self.current_val = self.pre_val
-        if self.pre_val < self.speed_val:
-
-            while self.current_val < self.speed_val:
-                self.current_val = self.current_val + 2000
-                if self.current_val > 60000:
-                    self.current_val = 60000
-                # print(self.current_val, end=" ")
-                self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
-                sleep(0.1)
-            # self.current_val = self.speed_val
-        elif self.pre_val > self.speed_val:
-            
-            while self.current_val > self.speed_val:
-                self.current_val = self.current_val - 5000
-                if self.pre_val == 0:
-                    self.current_val = self.current_val - 300
-                if self.current_val < 0:
-                    self.current_val = self.speed_val + self.APS_VAL
-                # print(self.current_val, end=" ")
-                self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
-                sleep(0.2)
-
-        else:
-            self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
-            # self.current_val = 0
-
-    def test2_thread(self):
-        self.condition.acquire()
-        if self.pre_val < self.speed_val:
-            while self.current_val2 <= self.speed_val:
-                print("PLUS!!!")
-                if self.__GEAR == 'GFORWARD':
-                    self.current_val2 = self.current_val2 + self.DELTA_PLUS
-                elif self.__GEAR == 'GBACKWARD':
-                    self.current_val2 = self.current_val2 + ( self.DELTA_PLUS * 2)
-                # else:
-                    # self.current_val2 = self.DELTA_PLUS
+        while True:
+            # self.condition.acquire()
+            if self.pre_val < self.speed_val:
+                while self.current_val2 <= self.speed_val:
+                    print("PLUS!!!")
+                    if self.__GEAR == 'GFORWARD':
+                        self.current_val2 = self.current_val2 + self.DELTA_PLUS
+                    elif self.__GEAR == 'GBACKWARD':
+                        self.current_val2 = self.current_val2 + ( self.DELTA_PLUS * 2)
+                    # else:
+                        # self.current_val2 = self.DELTA_PLUS
+                    
+                    if self.current_val2 >= 60000 :
+                        self.current_val2 = 60000
+                    # print(self.current_val, end=" ")
+                    self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
+                    sleep(0.02)
+                # self.current_val = self.speed_val
+            elif self.pre_val >= self.speed_val:
                 
-                if self.current_val2 >= 60000 :
-                    self.current_val2 = 60000
-                # print(self.current_val, end=" ")
-                self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
-                sleep(0.02)
-            # self.current_val = self.speed_val
-        elif self.pre_val >= self.speed_val:
-            
-            while self.current_val2 >= self.speed_val:
-                if self.__GEAR == 'GFORWARD':
-                    self.current_val2 = self.current_val2 - self.DELTA_MINUS
-                elif self.__GEAR == 'GBACKWARD':
-                    self.current_val2 = self.current_val2 - ( self.DELTA_MINUS * 2)
-                # else :
-                #     self.current_val2 = 0
-                # self.current_val2 = self.current_val2 - self.DELTA_MINUS
+                while self.current_val2 >= self.speed_val:
+                    if self.__GEAR == 'GFORWARD':
+                        self.current_val2 = self.current_val2 - self.DELTA_MINUS
+                    elif self.__GEAR == 'GBACKWARD':
+                        self.current_val2 = self.current_val2 - ( self.DELTA_MINUS * 2)
+                    # else :
+                    #     self.current_val2 = 0
+                    # self.current_val2 = self.current_val2 - self.DELTA_MINUS
 
-                if self.current_val2 < 0:
-                    self.current_val2 = self.speed_val + self.APS_VAL
-                # print(self.current_val, end=" ")
-                self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
-                sleep(0.02)
-        self.condition.notify()
-        self.condition.release()
+                    if self.current_val2 < 0:
+                        self.current_val2 = self.speed_val + self.APS_VAL
+                    # print(self.current_val, end=" ")
+                    self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
+                    sleep(0.02)
+            # self.condition.notify()
+            # self.condition.release()
     def plot_thread(self):
 
         fig = plt.figure(figsize=(10,8))     #figure(도표) 생성
@@ -268,6 +239,14 @@ class JoystickReader(object):
         plt.show()
 
     def sendpacket_thread(self):
+        try:
+            t = Thread(target=self.test_thread)
+            t.daemon = True
+            t.start()
+
+ 
+        except RuntimeError :
+            pass
         
         while True:        # alive count (0 ~ 255)
             # send packet
@@ -277,16 +256,6 @@ class JoystickReader(object):
                 # if self.pre_val != self.speed_val :
                 #     if abs(self.pre_val-self.speed_val) > 10 :
                         # self.current_val = self.pre_val
-                try:
-                    t = Thread(target=self.test_thread)
-                    t.daemon = True
-                    t.start()
-
-                    t2 = Thread(target=self.test2_thread)
-                    t2.daemon = True
-                    t2.start()
-                except RuntimeError :
-                    pass
 
                 self.current_value = self.current_val.to_bytes(2, byteorder="little", signed=False)
                 self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
