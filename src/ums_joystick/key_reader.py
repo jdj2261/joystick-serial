@@ -10,10 +10,13 @@ Description: Logitech Joystick key reader
 '''
 """
 *************** ISUE - UPDATE ***************
-10 /14 세종시 조종기 테스트
+10 / 14 세종시 조종기 테스트
 이슈 1. 조종기 선 연결 불안정 (연결 선 후크 마모현상으로 자주 연결이 끊어지는 현상이 발생함.)
 이슈 2. 민감도 조절 (올라가는 속도, 내려가는 속도)
 이슈 3. 버튼 누른 상태에서 선 연결이 끊어지면 추후에 선 연결 시 전 값이 남아있어 출발할때 움직이는 현상 발생 --> 매인 컨트롤러 : VCU 보드 쪽 문제
+
+10 / 16 카트리 조종기 테스트
+업데이트 1. 민감도 조절 (기존 쓰레드 이용 -> Lock 사용)
 *********************************************
 """
 
@@ -42,6 +45,11 @@ class JoystickReader(object):
     origin_button_states = {}
     origin_axis_map = []
     origin_button_map = []
+
+    """
+    CLASS VARIABLES
+    """
+    ACCEL_MAX = 60000
     APS_VAL = 2500 #5000
     DELTA_PLUS = 250
     DELTA_MINUS = 250
@@ -61,22 +69,24 @@ class JoystickReader(object):
         self.__isConnect_joy = True
         self.__cnt = 0
 
-        self.current_value = [0x00, 0x00]
-        self.result_value = [0x00, 0x00]
+        self.speed_value = [0x00, 0x00]
+        self.brake_value = [0x00, 0x00]
         self.steer_value = [0x00, 0x00]
         self.exp_value = [0x00, 0x00]
-        self.brake_value = [0x00, 0x00]
-        self.speed_val = 0
+
+        
+        self.accel_val = 0 # 실제 accel raw data
         self.brake_val = 0
         self.steer_val = 0
         self.exp_val = 0
         self.pre_val = 0
-        self.current_val = self.speed_val + self.APS_VAL
-        self.result_val = self.speed_val + self.APS_VAL
+        self.current_val = self.accel_val + self.APS_VAL
+        self.speed_val = self.accel_val + self.APS_VAL
 
         self.condition = Condition()
-    def joy_check(self):
 
+    # joystick connection checking
+    def joy_check(self):
         try:
             print('Opening %s...' % self.__fn)
             self.__jsdev = open(self.__fn, 'rb')
@@ -147,63 +157,81 @@ class JoystickReader(object):
             self.button_map.append(btn_name)
             self.button_states[btn_name] = 0
 
-    def test_thread(self):
+    def control_thread(self):
+        # 상태를 잠금으로 변경 후 즉시 반환
         self.condition.acquire()
-        if self.pre_val < self.speed_val:
-            while self.current_val <= self.speed_val:
+
+        # accel button을 누를 경우
+        if self.pre_val < self.accel_val:
+            # accel axis value가 될 때 까지 0.02초 마다
+            while self.current_val <= self.accel_val:
+                # GEAR가 전진일 경우 DELTA PLUS 만큼 증가
                 if self.__GEAR == 'GFORWARD':
                     self.current_val = self.current_val + self.DELTA_PLUS
+                # GEAR가 후진일 경우 DELTA PLUS * 2 만큼 증가
                 elif self.__GEAR == 'GBACKWARD':
                     self.current_val = self.current_val + (self.DELTA_PLUS * 2)
-                if self.current_val > 60000:
-                    self.current_val = 60000
-                # print(self.current_val, end=" ")
-                self.current_value = self.current_val.to_bytes(
-                    2, byteorder="little", signed=False)
+                # 액셀 최댓값 설정 (60000)
+                if self.current_val > self.ACCEL_MAX:
+                    self.current_val = self.ACCEL_MAX
+       
                 sleep(0.02)
-            # self.current_val = self.speed_val
-        elif self.pre_val >= self.speed_val:
-            while self.current_val >= self.speed_val:
+        
+        # accel button을 뗄 경우
+        elif self.pre_val >= self.accel_val:
+            while self.current_val >= self.accel_val:
                 if self.__GEAR == 'GFORWARD':
                     self.current_val = self.current_val - self.DELTA_MINUS
                 elif self.__GEAR == 'GBACKWARD':
                     self.current_val = self.current_val - (self.DELTA_MINUS * 2)                   
-                # if self.speed_val == 0:
+                # if self.accel_val == 0:
                 #     self.current_val = self.current_val - 3000
                 # print(self.current_val, end=" ")
                 if self.current_val < 0:
-                    self.current_val = self.speed_val + self.APS_VAL
-                self.current_value = self.current_val.to_bytes(
-                    2, byteorder="little", signed=False)
+                    self.current_val = self.accel_val + self.APS_VAL
                 sleep(0.02)
+        
         self.condition.notify()
+        # 쓰레드 잠김 해제
         self.condition.release()
 
     def sendpacket_thread(self):
 
         while True:        # alive count (0 ~ 255)
+            # self.condition.acquire()
+            # self.condition.wait(.02)
             # send packet
             if self.__isConnect_joy:
                 self.__pt.count_alive()
-    
-                if abs(self.pre_val-self.speed_val) > 1:
-                    # self.current_val = self.pre_va
-                    try:
-                        t = Thread(target=self.test_thread)
-                        t.daemon = True
-                        t.start()
-                    except :
-                        pass
-                    self.current_value = self.current_val.to_bytes(
-                        2, byteorder="little", signed=False)
+                # 2중 스레드 시작
+                try:
+                    t = Thread(target=self.control_thread)
+                    t.daemon = True
+                    t.start()
+                # 에러 무시
+                except :
+                    pass
 
+                # brake 값 0일 경우
+                if self.brake_val == 0:
+                    # 현재 액셀은 APS_VAL
+                    # accel value 최솟값 설정
+                    if self.current_val < self.APS_VAL:
+                        self.current_val = self.APS_VAL
+                    self.speed_val = self.current_val
+                # 0이 아닐 경우
+                else:
+                    # speed value 0
+                    self.current_val = 0
+                    self.speed_val = 0
 
-                    # print("ddd")
+                # ESTOP 걸릴 경우 
+                if self.__ESTOP == 'ON':
+                    # speed value 0
+                    self.speed_val = 0
 
-                    # else :
-                    #     print("test")
-                    #     self.current_value = self.speed_val.to_bytes(2, byteorder="little", signed=False)
-                # self.current_val = self.pre_val
+                self.speed_value = self.speed_val.to_bytes(
+                    2, byteorder="little", signed=False)
                 self.brake_value = self.brake_val.to_bytes(
                     2, byteorder="little", signed=False)
                 self.steer_value = self.steer_val.to_bytes(
@@ -211,21 +239,8 @@ class JoystickReader(object):
                 self.exp_value = self.exp_val.to_bytes(
                     2, byteorder="little", signed=True)
 
-                if self.brake_val == 0:
-                    if self.current_val < self.APS_VAL:
-                        self.current_val = self.APS_VAL
-
-                    self.result_val = self.current_val
-                else:
-                    self.current_val = 0
-                    self.result_val = 0
-
-                if self.__ESTOP == 'ON':
-                    self.result_val = 0
-
-                self.result_value = self.result_val.to_bytes(2, byteorder="little", signed=False)
-                self.__pt.speed_data[0] = self.result_value[0]
-                self.__pt.speed_data[1] = self.result_value[1]
+                self.__pt.speed_data[0] = self.speed_value[0]
+                self.__pt.speed_data[1] = self.speed_value[1]
                 self.__pt.brake_data[0] = self.brake_value[0]
                 self.__pt.brake_data[1] = self.brake_value[1]
                 self.__pt.steer_data[0] = self.steer_value[0]
@@ -235,33 +250,30 @@ class JoystickReader(object):
 
                 packet = self.__pt.makepacket(
                     ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
-
-                # print("current_val : {0}".format(self.current_val), end=" ")
-
-                # print("pre_val : {0}".format(self.pre_val), end=" ")
-                # print("speed_val : {0}".format(self.speed_val))
-                print("current_val : {0} ".format(self.result_val), end=" ")
-                print("packet : {0}".format(packet))
                 self.__writer.run(packet)
+
+                print("speed_val : {0} ".format(self.speed_val), end=" ")
+                print("steer_val : {0} ".format(self.steer_val), end=" ")
+                print("packet : {0}".format(packet))
+
             else:
                 self.reset_value()
-
                 print("not joystick connect")
                 sleep(0.1)
-
-            self.pre_val = self.speed_val
+                            
+            # self.condition.release()
+            self.pre_val = self.accel_val
             sleep(0.02)  # 50Hz
 
     def reset_value(self):
-        self.speed_val = 0
+        self.accel_val = 0
         self.current_val  = 0
-        self.result_val = 0
+        self.speed_val = 0
         self.brake_val = 0
         self.steer_val = 0
         self.exp_val = 0
 
-        self.current_value = [0x00, 0x00]
-        self.result_value = [0x00, 0x00]
+        self.speed_value = [0x00, 0x00]
         self.brake_value = [0x00, 0x00]
         self.steer_value  = [0x00, 0x00]
         self.exp_value  = [0x00, 0x00]
@@ -318,11 +330,7 @@ class JoystickReader(object):
                          # type이 0x02이면 축이 이동한 상태이다.
                         if type & 0x02:
                             # number로 해당 축의 이름 가져오기
-                            axis = self.axis_map[number]
-                            # speed_value = [0x00, 0x00]
-                            # steer_value = [0x00, 0x00]
-                            # exp_value   = [0x00,0x00]
-                            
+                            axis = self.axis_map[number]                            
                             # excel
                             if axis == 'z':
                                 """
@@ -332,11 +340,8 @@ class JoystickReader(object):
                                 상태값(0, 1, -1)을 저장
                                 0 ~ 65534
                                 """
-                                self.speed_val = int(value) + 32767
+                                self.accel_val = int(value) + 32767
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
-                                # self.speed_value = self.speed_val.to_bytes(2, byteorder="little", signed=False)
-                                # self.__pt.speed_data[0] = self.speed_value[0]
-                                # self.__pt.speed_data[1] = self.speed_value[1]
 
                             # brake
                             if axis == 'rz':
@@ -366,15 +371,6 @@ class JoystickReader(object):
                                     self.exp_val = 32767
                                 elif self.exp_val < -32000:
                                     self.exp_val = -32767
-
-                                # print("steer_val : {0}, exp_val : {1}".format(self.steer_val,int(self.exp_val)))
-                                # print("%s: %.3f \t" % (axis, axis_val), end="")
-                                # self.steer_value = self.steer_val.to_bytes(2, byteorder="little", signed=True)
-                                # self.exp_value = self.exp_val.to_bytes(2, byteorder="little", signed=True)
-                                # self.__pt.steer_data[0] = self.steer_value[0]
-                                # self.__pt.steer_data[1] = self.steer_value[1]
-                                # self.__pt.steer_data[2] = self.exp_value[0]
-                                # self.__pt.steer_data[3] = self.exp_value[1]
 
                             elif axis == 'hat0y':
                                 axis_val = int(value) / 32767

@@ -1,4 +1,4 @@
-# JOYSTICK SERIAL
+# JOYSTICK SERIAL****
 
 [TOC]
 
@@ -6,25 +6,28 @@
 
 This package is for serial communication by connecting a joystick to the Raspberry Pi 3.
 
-todo..
+
+
+## Protocol
+
+Data ordering : Little Endian
+
+Data Transfer Rate : 50Hz (0.02 ms) 
+
+![image-20201018112639933](/Users/jindaejong/Library/Application Support/typora-user-images/image-20201018112639933.png)
+
+
 
 ## Package
 
 ### 1) ums_joystick
 
 - names.py
-
   - joystick's buttons, axises dictionary
-
 - protocol.py
-
   - packet's elements definition
-
 - key_reader.py
-
   - joystick connection check & event process
-
-    
 
 ### 2) ums_serial
 
@@ -37,21 +40,21 @@ todo..
 
 ## Main
 
-###  umd_serial.py
+### umd_serial.py
 
-- main 
-- serial connection check, Serial process
+- main
+- Serial connection check, Serial process
 
 
 
 ## EXECUTION
 
-~~~
-cd scripts
-python3 joystick_serial
+```
+$ cd scripts
+$ python3 joystick_serial
 
 or
 
-python3 umd_serial.py
-~~~
+$ python3 umd_serial.py
+```
 
