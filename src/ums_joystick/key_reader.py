@@ -205,14 +205,6 @@ class JoystickReader(object):
 
                 if self.__isConnect_joy:
                     self.__pt.count_alive()
-                    # 2중 스레드 시작
-
-                    # try:
-
-                    # 에러 무시
-                    # except Exception as e:
-                    #     print(e)
-                        # pass
 
                     # brake 값 0일 경우
                     if self.brake_val == 0:
