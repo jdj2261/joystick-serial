@@ -52,7 +52,8 @@ class JoystickReader(object):
     APS_VAL = 2500#5000
     DELTA_PLUS = 250#100
     DELTA_MINUS = 250#50
-    STEER_PARAM = 100
+    STEER_RATIO = 0.8
+    # STEER_PARAM = 100
 
     def __init__(self,serial, port):
         self.__serial = serial
@@ -432,12 +433,27 @@ class JoystickReader(object):
                                 else :     
                                     self.exp_val = int((pow((self.steer_val/32767),2) * 32767 * (self.steer_val / abs(self.steer_val))))
                                     self.exp_val = self.exp_val / 32767
-                                    self.exp_val = pow(self.exp_val, 3) * 32767
 
-                                    if self.exp_val < self.STEER_PARAM:
-                                        self.exp_val = int(self.exp_val)
-                                    else:   
-                                        self.exp_val  = int(self.exp_val  // self.STEER_PARAM) * self.STEER_PARAM
+                                    # CASE 2
+                                    if self.exp_val <= self.STEER_RATIO:
+                                        self.exp_val = self.exp_val * (self.exp_val + 1 - self.STEER_RATIO)
+                                    else:
+                                        self.exp_val = self.exp_val * (self.exp_val - self.STEER_RATIO) + self.STEER_RATIO
+                                    
+                                    self.exp_val = int(self.exp_val) * 32767
+                                    # CASE 1
+                                    # if self.exp_val <= self.STEER_RATIO:
+                                    #     self.exp_val = self.exp_val * (self.exp_val + 1 - self.STEER_RATIO)
+                                    # else:
+                                    #     self.exp_val = self.steer_val
+
+                                    # PRE CASE
+                                    # self.exp_val = pow(self.exp_val, 3) * 32767
+
+                                    # if self.exp_val < self.STEER_PARAM:
+                                    #     self.exp_val = int(self.exp_val)
+                                    # else:   
+                                    #     self.exp_val  = int(self.exp_val  // self.STEER_PARAM) * self.STEER_PARAM
 
                                 if self.exp_val  > 32000 :
                                     self.exp_val  = 32000
