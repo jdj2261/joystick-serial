@@ -62,7 +62,9 @@ fig, ax = plt.subplots()
 ax.grid(True)
 
 # y축에 표현할 값을 반환해야하고 scope 객체 선언 전 선언해야함.
-
+def insert():
+    value = np.random.randint(1,9) # 1~9 사이의 임의의 수를 Y값으로 함
+    return value 
 
 # 객체 생성
 scope = Scope(ax,insert, ystart = 0, ymax = 10)
