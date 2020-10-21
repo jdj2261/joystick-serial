@@ -52,6 +52,7 @@ class JoystickReader(object):
     APS_VAL = 2500 #5000
     DELTA_PLUS = 250
     DELTA_MINUS = 250
+    STEER_RATIO = 0.8
     def __init__(self, serial, port):
 
         self.__serial = serial
@@ -182,9 +183,7 @@ class JoystickReader(object):
                         self.current_val = self.current_val - self.DELTA_MINUS
                     elif self.__GEAR == 'GBACKWARD':
                         self.current_val = self.current_val - (self.DELTA_MINUS * 2)                   
-                    # if self.accel_val == 0:
-                    #     self.current_val = self.current_val - 3000
-                    # print(self.current_val, end=" ")
+
                     if self.current_val < 0:
                         self.current_val = self.accel_val + self.APS_VAL
                     sleep(0.02)
@@ -249,6 +248,7 @@ class JoystickReader(object):
 
                     print("speed_val : {0} ".format(self.speed_val), end=" ")
                     print("steer_val : {0} ".format(self.steer_val), end=" ")
+                    print("fitting_steer_val : {0} ".format(self.exp_val), end=" ")
                     print("packet : {0}".format(packet))
 
                 else:
@@ -313,7 +313,6 @@ class JoystickReader(object):
                                 # print(result_button)
                                 if button == 'mode':
                                     self.__ESTOP = 'ON'
-                                    raise Exception
 
                                 if result_button == 'OFF':
                                     self.__ESTOP = 'OFF'
@@ -363,13 +362,14 @@ class JoystickReader(object):
                                 if self.steer_val == 0:
                                     self.exp_val = 0
                                 else:
-                                    self.exp_val = int(
-                                        (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
+                                    self.exp_val = self.steer_fitting(self.steer_val)
+                                    # self.exp_val = int(
+                                    #     (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
 
                                 if self.exp_val > 32000:
-                                    self.exp_val = 32767
+                                    self.exp_val = 32000
                                 elif self.exp_val < -32000:
-                                    self.exp_val = -32767
+                                    self.exp_val = -32000
 
                             elif axis == 'hat0y':
                                 axis_val = int(value) / 32767
@@ -404,6 +404,56 @@ class JoystickReader(object):
         except (KeyboardInterrupt, SystemExit):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
             exit(0)
+
+    def steer_fitting(self, data):
+        pre_result_data = 0
+        result_data = 0
+
+        result_data = data / 32767
+        if pre_result_data != result_data:
+            # 현재 값이 이전 값보다 클 경우
+            if pre_result_data < result_data:
+                # steer 값이 양수일 때
+                if data >= 0:
+                    # 현재 데이터 보정 (STEER RATIO 까지 완만하게 증가)
+                    if result_data <= self.STEER_RATIO:
+                        result_data = (1/self.STEER_RATIO) * result_data * result_data
+                        result_data = int(result_data * 32767)
+                    # 이후에는 현재 데이터 이용 
+                    else:
+                        result_data = int(result_data * 32767)
+                # steer 값이 음수일 때
+                else:
+                    # 현재 데이터 보정 (STEER RATIO-1 까지 완만하게 감소)
+                    if result_data <= self.STEER_RATIO - 1:
+                        result_data = (1/self.STEER_RATIO) * (result_data + 1) * (result_data + 1) - 1
+                        result_data = int(result_data * 32767)
+                    else:
+                        result_data = int(result_data * 32767)
+            # 현재 값이 이전 값보다 작을 경우
+            elif pre_result_data >= result_data:
+                # steer 값이 양수 일 때
+                if data >= 0:
+                    # 현재 데이터 보정 ( 1 - STEER RATIO 까지 완만하게 감소)
+                    if result_data >= (1 - self.STEER_RATIO):
+                        result_data = (-1/self.STEER_RATIO) * (result_data - 1) * (result_data - 1) + 1
+                        result_data = int(result_data * 32767)
+                    else:
+                        result_data = int(result_data * 32767)
+                else:
+                    # 현재 데이터 보정 ( -STEER RATIO 까지 완만하게 증가)
+                    if result_data >= -self.STEER_RATIO:
+                        result_data = (-1/self.STEER_RATIO) * result_data * result_data
+                        result_data = int(result_data * 32767)
+                    else:
+                        result_data = int(result_data * 32767)
+            pre_result_data = result_data
+        else:
+            result_data = int(result_data * 32767)
+        
+        # 1의 자리 버림
+        result_data = (result_data // 10) * 10
+        return result_data
 
     def reconect(self):
         # print("test")
