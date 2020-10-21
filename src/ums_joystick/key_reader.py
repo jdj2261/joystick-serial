@@ -16,6 +16,9 @@ Description: Logitech Joystick key reader
 
 10 / 16 카트리 조종기 테스트
 업데이트 1. 민감도 조절 (기존 쓰레드 이용 -> Lock 사용)
+
+10 / 21 조종기 횡방향 테스트
+업데이트 1. 횡방향 민감도 조절 (2차함수 이용)
 *********************************************
 """
 
@@ -53,6 +56,7 @@ class JoystickReader(object):
     DELTA_PLUS = 250
     DELTA_MINUS = 250
     STEER_RATIO = 0.8
+    STEER_LIMIT = 32000 # default 32767
     def __init__(self, serial, port):
 
         self.__serial = serial
@@ -366,10 +370,10 @@ class JoystickReader(object):
                                     # self.exp_val = int(
                                     #     (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
 
-                                if self.exp_val > 32000:
-                                    self.exp_val = 32000
-                                elif self.exp_val < -32000:
-                                    self.exp_val = -32000
+                                if self.exp_val > self.STEER_LIMIT:
+                                    self.exp_val = self.STEER_LIMIT
+                                elif self.exp_val < -self.STEER_LIMIT:
+                                    self.exp_val = -self.STEER_LIMIT
 
                             elif axis == 'hat0y':
                                 axis_val = int(value) / 32767
@@ -397,9 +401,6 @@ class JoystickReader(object):
                     print(" ctrl + c pressed !!")
                     print("exit .. ")
                     exit(0)
-                # except Exception:
-                #     self.reconect()
-                #     sleep(0.5)
 
         except (KeyboardInterrupt, SystemExit):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
@@ -409,7 +410,7 @@ class JoystickReader(object):
         pre_result_data = 0
         result_data = 0
 
-        result_data = data / 32767
+        result_data = data / self.STEER_LIMIT
         if pre_result_data != result_data:
             # 현재 값이 이전 값보다 클 경우
             if pre_result_data < result_data:
@@ -418,18 +419,18 @@ class JoystickReader(object):
                     # 현재 데이터 보정 (STEER RATIO 까지 완만하게 증가)
                     if result_data <= self.STEER_RATIO:
                         result_data = (1/self.STEER_RATIO) * result_data * result_data
-                        result_data = int(result_data * 32767)
+                        result_data = int(result_data * self.STEER_LIMIT)
                     # 이후에는 현재 데이터 이용 
                     else:
-                        result_data = int(result_data * 32767)
+                        result_data = int(result_data * self.STEER_LIMIT)
                 # steer 값이 음수일 때
                 else:
                     # 현재 데이터 보정 (STEER RATIO-1 까지 완만하게 감소)
                     if result_data <= self.STEER_RATIO - 1:
                         result_data = (1/self.STEER_RATIO) * (result_data + 1) * (result_data + 1) - 1
-                        result_data = int(result_data * 32767)
+                        result_data = int(result_data * self.STEER_LIMIT)
                     else:
-                        result_data = int(result_data * 32767)
+                        result_data = int(result_data * self.STEER_LIMIT)
             # 현재 값이 이전 값보다 작을 경우
             elif pre_result_data >= result_data:
                 # steer 값이 양수 일 때
@@ -437,19 +438,19 @@ class JoystickReader(object):
                     # 현재 데이터 보정 ( 1 - STEER RATIO 까지 완만하게 감소)
                     if result_data >= (1 - self.STEER_RATIO):
                         result_data = (-1/self.STEER_RATIO) * (result_data - 1) * (result_data - 1) + 1
-                        result_data = int(result_data * 32767)
+                        result_data = int(result_data * self.STEER_LIMIT)
                     else:
-                        result_data = int(result_data * 32767)
+                        result_data = int(result_data * self.STEER_LIMIT)
                 else:
                     # 현재 데이터 보정 ( -STEER RATIO 까지 완만하게 증가)
                     if result_data >= -self.STEER_RATIO:
                         result_data = (-1/self.STEER_RATIO) * result_data * result_data
-                        result_data = int(result_data * 32767)
+                        result_data = int(result_data * self.STEER_LIMIT)
                     else:
-                        result_data = int(result_data * 32767)
+                        result_data = int(result_data * self.STEER_LIMIT)
             pre_result_data = result_data
         else:
-            result_data = int(result_data * 32767)
+            result_data = int(result_data * self.STEER_LIMIT)
         
         # 1의 자리 버림
         result_data = (result_data // 10) * 10
