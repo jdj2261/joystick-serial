@@ -52,7 +52,7 @@ class JoystickReader(object):
     APS_VAL = 2500#5000
     DELTA_PLUS = 250#100
     DELTA_MINUS = 250#50
-    STEER_RATIO = 1
+    STEER_RATIO = 0.8
     # STEER_PARAM = 100
 
     def __init__(self,serial, port):
@@ -79,6 +79,7 @@ class JoystickReader(object):
         self.exp_val = 0
         self.pre_exp_val = 0
         self.pre_val=0
+        self.result = 0
         self.accel_val = self.speed_val + self.APS_VAL
         self.result_accel_val = self.speed_val + self.APS_VAL
 
@@ -110,7 +111,11 @@ class JoystickReader(object):
         return value 
 
     def steer_insert(self):
-        value = self.tmp
+        value = self.result
+
+        if abs(value) <=1:
+            value = value * 32000
+        # print(value)
         return value 
 
     def accel_test_thread(self):
@@ -153,7 +158,8 @@ class JoystickReader(object):
 
     def data_thread(self):
         while True:
-            self.exp_val += 100
+            self.condition.acquire()
+            self.exp_val += 200
             # print(self.exp_val)
             if self.exp_val >= 32000:
                 self.exp_val = 32000
@@ -165,6 +171,8 @@ class JoystickReader(object):
                         break
                     sleep(0.01)
             sleep(0.01)
+            self.condition.notify()
+            self.condition.release()
     def sendpacket_thread(self):
         try:
             t = Thread(target=self.accel_test_thread)
@@ -185,42 +193,49 @@ class JoystickReader(object):
                 self.tmp = self.exp_val / 32000
 
                 if self.pre_exp_val != self.exp_val:
-                    print("PRE : {}, CUR : {}".format(self.pre_exp_val, self.exp_val))
+                    # print("PRE : {}, CUR : {}".format(self.pre_exp_val, self.exp_val))
                     if self.pre_exp_val < self.exp_val:
                         if self.exp_val >= 0:
                             # CASE 2
                             if self.tmp <= self.STEER_RATIO:
+                                print("TEST")
                                 self.tmp = (1/self.STEER_RATIO) * self.tmp * self.tmp
                                 self.tmp = int(self.tmp * 32000)
-                            # else:
-                            #     self.tmp = int(self.tmp * 32000)
+                            else:
+                                self.tmp = int(self.tmp * 32000)
                         else:
                             if self.tmp <=  self.STEER_RATIO -1 :
                                 self.tmp = (1/self.STEER_RATIO)*(self.tmp +1)*(self.tmp + 1) -1
                                 self.tmp = int(self.tmp * 32000)
-                            # else:
-                            #     self.tmp = self.tmp
-                            #     self.tmp = int(self.tmp * 32000)
+                            else:
+                                self.tmp = self.tmp
+                                self.tmp = int(self.tmp * 32000)
 
                     elif self.pre_exp_val >= self.exp_val:
                         if self.exp_val >= 0:
-                            print("TEST : {}".format(self.tmp))
+                            # print("TEST : {}".format(self.tmp))
                             if self.tmp >=  (1 - self.STEER_RATIO) :
+                                print("TEST 22")
                                 self.tmp = (-1/self.STEER_RATIO)*(self.tmp -1)*(self.tmp-1) + 1  
-                                print("TEST22 : {}".format(self.tmp))
+                                # print("TEST22 : {}".format(self.tmp))
                                 self.tmp = int(self.tmp * 32000)
-                            # else:
-                            #     self.tmp = self.tmp
-                            #     self.tmp = int(self.tmp * 32000)
+                            else:
+                                self.tmp = self.tmp
+                                self.tmp = int(self.tmp * 32000)
                         else:
                             # CASE 2
                             if self.tmp >= -self.STEER_RATIO:
                                 self.tmp = (-1/self.STEER_RATIO) * self.tmp * self.tmp
                                 self.tmp = int(self.tmp * 32000)
-                            # else:
-                            #     self.tmp = int(self.tmp * 32000)
+                            else:
+                                self.tmp = int(self.tmp * 32000)
+                    
                     self.pre_exp_val = self.exp_val
-
+                else:
+                    self.tmp = int(self.tmp * 32000)
+                self.tmp = self.tmp//10 * 10
+                self.result = self.tmp
+                print("RESULT : {}".format(self.result))
                 self.accel_value = self.accel_val.to_bytes(2, byteorder="little", signed=False)
                 self.brake_value = self.brake_val.to_bytes(2, byteorder="little", signed=False)
                 self.steer_value = self.steer_val.to_bytes(2, byteorder="little", signed=True)
@@ -298,9 +313,9 @@ class JoystickReader(object):
             scope3 = Scope(ax3,self.steer_insert, ystart = -65535, ymax = 65535, title = "change", color='y')    
 
             # update 매소드 호출
-            ani = animation.FuncAnimation(fig, scope.update,interval=10,blit=True)
-            ani2 = animation.FuncAnimation(fig, scope2.update,interval=10,blit=True)
-            ani3 = animation.FuncAnimation(fig, scope3.update,interval=10,blit=True)
+            ani = animation.FuncAnimation(fig, scope.update,interval=20,blit=True)
+            ani2 = animation.FuncAnimation(fig, scope2.update,interval=20,blit=True)
+            ani3 = animation.FuncAnimation(fig, scope3.update,interval=20,blit=True)
             plt.show()
         except:
             print("Not show plot")
@@ -327,5 +342,5 @@ class JoystickReader(object):
                 sleep(0.01)
         except (KeyboardInterrupt, SystemExit):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
-            # exit(0)
+            exit(0)
 
