@@ -53,7 +53,7 @@ class JoystickReader(object):
     DELTA_PLUS = 250#100
     DELTA_MINUS = 250#50
     STEER_RATIO = 0.8
-    # STEER_PARAM = 100
+    STEER_LIMIT = 32000
 
     def __init__(self,serial, port):
         self.__serial = serial
@@ -161,13 +161,13 @@ class JoystickReader(object):
             self.condition.acquire()
             self.exp_val += 200
             # print(self.exp_val)
-            if self.exp_val >= 32000:
-                self.exp_val = 32000
+            if self.exp_val >= self.STEER_LIMIT:
+                self.exp_val = self.STEER_LIMIT
                 while True:
                     # print(tmp)
                     self.exp_val = self.exp_val - 200
-                    if self.exp_val <=-32000:
-                        self.exp_val = -32000
+                    if self.exp_val <=-self.STEER_LIMIT:
+                        self.exp_val = -self.STEER_LIMIT
                         break
                     sleep(0.01)
             sleep(0.01)
