@@ -8,8 +8,8 @@ from src.ums_serial.writer import UMDSerialWriter
 조이스틱 없을 경우 -> joy_virtual_test
 있으면 -> key_reader
 """
-from src.ums_joystick.joy_virtual_test import JoystickReader 
-# from src.ums_joystick.key_reader import JoystickReader 
+# from src.ums_joystick.joy_virtual_test import JoystickReader 
+from src.ums_joystick.key_reader import JoystickReader 
 '''
 Created Date: May 15. 2020
 Copyright: UNMAND SOLUTION

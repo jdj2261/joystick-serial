@@ -52,7 +52,8 @@ class JoystickReader(object):
     APS_VAL = 2500#5000
     DELTA_PLUS = 250#100
     DELTA_MINUS = 250#50
-    STEER_RATIO = 0.8
+    STEER_RATIO = 1
+    STEER_LIMIT = 32767
     # STEER_PARAM = 100
 
     def __init__(self,serial, port):
@@ -80,6 +81,7 @@ class JoystickReader(object):
         self.steer_val = 0
         self.exp_val = 0
         self.pre_val=0
+        self.pre_result_data = 0
         self.current_val =  self.speed_val + self.APS_VAL
         self.current_val2 = self.speed_val + self.APS_VAL
         self.current_test = self.speed_val + self.APS_VAL
@@ -163,13 +165,6 @@ class JoystickReader(object):
         value = self.speed_val 
         return value 
 
-    # def insert2(self):
-    #     value = self.current_test   
-    #     return value 
-
-    # def insert3(self):
-    #     value = self.current_val
-    #     return value 
 
     def insert2(self):
         value = self.exp_val
@@ -237,9 +232,9 @@ class JoystickReader(object):
         scope2 = Scope(ax2,self.insert2, ystart = -65535, ymax = 65535, title = "result", color='r')
         scope3 = Scope(ax3,self.insert3, ystart = -65535, ymax = 65535, title = "change", color='y')    
         # update 매소드 호출
-        ani = animation.FuncAnimation(fig, scope.update,interval=10,blit=True)
-        ani2 = animation.FuncAnimation(fig, scope2.update,interval=10,blit=True)
-        ani3 = animation.FuncAnimation(fig, scope3.update,interval=10,blit=True)
+        ani = animation.FuncAnimation(fig, scope.update,interval=20,blit=True)
+        ani2 = animation.FuncAnimation(fig, scope2.update,interval=20,blit=True)
+        ani3 = animation.FuncAnimation(fig, scope3.update,interval=20,blit=True)
         plt.show()
 
     def sendpacket_thread(self):
@@ -282,10 +277,6 @@ class JoystickReader(object):
                 else :
                     self.current_val2 = 0
                     self.current_test = 0
-
-                print(" TEST : {}".format(self.current_test))
-                    
-
 
                 if self.__ESTOP == 'ON':
                     self.current_test = 0
@@ -431,29 +422,7 @@ class JoystickReader(object):
                                 if self.steer_val == 0:
                                     self.exp_val = 0
                                 else :     
-                                    self.exp_val = int((pow((self.steer_val/32767),2) * 32767 * (self.steer_val / abs(self.steer_val))))
-                                    self.exp_val = self.exp_val / 32767
-
-                                    # CASE 2
-                                    if self.exp_val <= self.STEER_RATIO:
-                                        self.exp_val = self.exp_val * (self.exp_val + 1 - self.STEER_RATIO)
-                                    else:
-                                        self.exp_val = self.exp_val * (self.exp_val - self.STEER_RATIO) + self.STEER_RATIO
-                                    
-                                    self.exp_val = int(self.exp_val) * 32767
-                                    # CASE 1
-                                    # if self.exp_val <= self.STEER_RATIO:
-                                    #     self.exp_val = self.exp_val * (self.exp_val + 1 - self.STEER_RATIO)
-                                    # else:
-                                    #     self.exp_val = self.steer_val
-
-                                    # PRE CASE
-                                    # self.exp_val = pow(self.exp_val, 3) * 32767
-
-                                    # if self.exp_val < self.STEER_PARAM:
-                                    #     self.exp_val = int(self.exp_val)
-                                    # else:   
-                                    #     self.exp_val  = int(self.exp_val  // self.STEER_PARAM) * self.STEER_PARAM
+                                    self.exp_val = self.steer_fitting(self.steer_val)
 
                                 if self.exp_val  > 32000 :
                                     self.exp_val  = 32000
@@ -504,6 +473,57 @@ class JoystickReader(object):
         except (KeyboardInterrupt, SystemExit):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
             exit(0)
+
+    def steer_fitting(self, data):
+
+        result_data = data 
+
+        if self.pre_result_data != result_data:
+            # 현재 값이 이전 값보다 클 경우
+            if self.pre_result_data < result_data:
+                result_data = data / self.STEER_LIMIT
+                # steer 값이 양수일 때
+                if data >= 0:
+                    # 현재 데이터 보정 (STEER RATIO 까지 완만하게 증가)
+                    if result_data <= self.STEER_RATIO:
+                        result_data = (1/self.STEER_RATIO) * result_data * result_data
+                        result_data = int(result_data * self.STEER_LIMIT)
+                    # 이후에는 현재 데이터 이용 
+                    else:
+                        result_data = int(result_data * self.STEER_LIMIT)
+                # steer 값이 음수일 때
+                else:
+                    # 현재 데이터 보정 (STEER RATIO-1 까지 완만하게 감소)
+                    if result_data <= self.STEER_RATIO - 1:
+                        result_data = (1/self.STEER_RATIO) * (result_data + 1) * (result_data + 1) - 1
+                        result_data = int(result_data * self.STEER_LIMIT)
+                    else:
+                        result_data = int(result_data * self.STEER_LIMIT)
+            # 현재 값이 이전 값보다 작을 경우
+            elif self.pre_result_data >= result_data:
+                # steer 값이 양수 일 때
+                result_data = data / self.STEER_LIMIT
+                if data >= 0:
+                    # 현재 데이터 보정 ( 1 - STEER RATIO 까지 완만하게 감소)
+                    if result_data >= (1 - self.STEER_RATIO):
+                        result_data = (-1/self.STEER_RATIO) * (result_data - 1) * (result_data - 1) + 1
+                        result_data = int(result_data * self.STEER_LIMIT)
+                    else:
+                        result_data = int(result_data * self.STEER_LIMIT)
+                else:
+                    # 현재 데이터 보정 ( -STEER RATIO 까지 완만하게 증가)
+                    if result_data >= -self.STEER_RATIO:
+                        result_data = (-1/self.STEER_RATIO) * result_data * result_data
+                        result_data = int(result_data * self.STEER_LIMIT)
+                    else:
+                        result_data = int(result_data * self.STEER_LIMIT)
+            self.pre_result_data = result_data
+        else:
+            result_data = int(result_data * self.STEER_LIMIT)
+        
+        # 1의 자리 버림
+        result_data = (result_data // 10) * 10
+        return result_data
 
             
     def reconect(self):
