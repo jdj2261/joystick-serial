@@ -55,7 +55,7 @@ class JoystickReader(object):
     APS_VAL = 2500 #5000
     DELTA_PLUS = 250
     DELTA_MINUS = 250
-    STEER_RATIO = 0.8
+    STEER_RATIO = 0.9
     STEER_LIMIT = 32000 # default 32767
     def __init__(self, serial, port):
 
@@ -82,8 +82,9 @@ class JoystickReader(object):
         self.accel_val = 0 # 실제 accel raw data
         self.brake_val = 0
         self.steer_val = 0
+        self.pre_exp_data = 0
         self.exp_val = 0
-        self.pre_val = 0
+        self.pre_accel_val = 0
         self.current_val = self.accel_val + self.APS_VAL
         self.speed_val = self.accel_val + self.APS_VAL
 
@@ -166,7 +167,7 @@ class JoystickReader(object):
         while True :
             self.condition.acquire()
             # accel button을 누를 경우
-            if self.pre_val < self.accel_val:
+            if self.pre_accel_val < self.accel_val:
                 # accel axis value가 될 때 까지 0.02초 마다
                 while self.current_val <= self.accel_val:
                     # GEAR가 전진일 경우 DELTA PLUS 만큼 증가
@@ -181,7 +182,7 @@ class JoystickReader(object):
                     sleep(0.02)
             
             # accel button을 뗄 경우
-            elif self.pre_val >= self.accel_val:
+            elif self.pre_accel_val >= self.accel_val:
                 while self.current_val >= self.accel_val:
                     if self.__GEAR == 'GFORWARD':
                         self.current_val = self.current_val - self.DELTA_MINUS
@@ -260,7 +261,7 @@ class JoystickReader(object):
                     print("not joystick connect")
                     sleep(0.5)
 
-                self.pre_val = self.accel_val
+                self.pre_accel_val = self.accel_val
                 sleep(0.02)  # 50Hz
         except KeyboardInterrupt:
             control_t.join()
@@ -407,13 +408,13 @@ class JoystickReader(object):
             exit(0)
 
     def steer_fitting(self, data):
-        pre_result_data = 0
-        result_data = 0
 
-        result_data = data / self.STEER_LIMIT
-        if pre_result_data != result_data:
+        result_data = data 
+
+        if self.pre_exp_data != result_data:
             # 현재 값이 이전 값보다 클 경우
-            if pre_result_data < result_data:
+            if self.pre_exp_data < result_data:
+                result_data = data / self.STEER_LIMIT
                 # steer 값이 양수일 때
                 if data >= 0:
                     # 현재 데이터 보정 (STEER RATIO 까지 완만하게 증가)
@@ -432,8 +433,9 @@ class JoystickReader(object):
                     else:
                         result_data = int(result_data * self.STEER_LIMIT)
             # 현재 값이 이전 값보다 작을 경우
-            elif pre_result_data >= result_data:
+            elif self.pre_exp_data >= result_data:
                 # steer 값이 양수 일 때
+                result_data = data / self.STEER_LIMIT
                 if data >= 0:
                     # 현재 데이터 보정 ( 1 - STEER RATIO 까지 완만하게 감소)
                     if result_data >= (1 - self.STEER_RATIO):
@@ -448,9 +450,9 @@ class JoystickReader(object):
                         result_data = int(result_data * self.STEER_LIMIT)
                     else:
                         result_data = int(result_data * self.STEER_LIMIT)
-            pre_result_data = result_data
+            self.pre_exp_data = result_data
         else:
-            result_data = int(result_data * self.STEER_LIMIT)
+            result_data = int(data)
         
         # 1의 자리 버림
         result_data = (result_data // 10) * 10
