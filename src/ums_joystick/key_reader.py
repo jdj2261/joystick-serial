@@ -53,9 +53,9 @@ class JoystickReader(object):
     """
     ACCEL_MAX = 60000
     APS_VAL = 2500 #5000
-    DELTA_PLUS = 250
-    DELTA_MINUS = 250
-    STEER_RATIO = 0.9
+    DELTA_PLUS = 100
+    DELTA_MINUS = 100
+    STEER_RATIO = 1
     STEER_LIMIT = 32000 # default 32767
     def __init__(self, serial, port):
 
@@ -187,7 +187,7 @@ class JoystickReader(object):
                     if self.__GEAR == 'GFORWARD':
                         self.current_val = self.current_val - self.DELTA_MINUS
                     elif self.__GEAR == 'GBACKWARD':
-                        self.current_val = self.current_val - (self.DELTA_MINUS * 2)                   
+                        self.current_val = self.current_val - (self.DELTA_MINUS * 3)                   
 
                     if self.current_val < 0:
                         self.current_val = self.accel_val + self.APS_VAL
@@ -227,6 +227,18 @@ class JoystickReader(object):
                     if self.__ESTOP == 'ON':
                         # speed value 0
                         self.speed_val = 0
+
+                    if self.steer_val == 0:
+                        self.exp_val = 0
+                    else:
+                        self.exp_val = self.steer_fitting(self.steer_val)
+                        # self.exp_val = int(
+                        #     (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
+
+                    if self.exp_val > self.STEER_LIMIT:
+                        self.exp_val = self.STEER_LIMIT
+                    elif self.exp_val < -self.STEER_LIMIT:
+                        self.exp_val = -self.STEER_LIMIT
 
                     self.speed_value = self.speed_val.to_bytes(
                         2, byteorder="little", signed=False)
@@ -363,18 +375,18 @@ class JoystickReader(object):
 
                             # steer
                             elif axis == 'rx':
-                                self.steer_val = int(value)
-                                if self.steer_val == 0:
-                                    self.exp_val = 0
-                                else:
-                                    self.exp_val = self.steer_fitting(self.steer_val)
-                                    # self.exp_val = int(
-                                    #     (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
+                                self.steer_val = int(value) 
+                                # if self.steer_val == 0:
+                                #     self.exp_val = 0
+                                # else:
+                                #     self.exp_val = self.steer_fitting(self.steer_val)
+                                #     # self.exp_val = int(
+                                #     #     (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
 
-                                if self.exp_val > self.STEER_LIMIT:
-                                    self.exp_val = self.STEER_LIMIT
-                                elif self.exp_val < -self.STEER_LIMIT:
-                                    self.exp_val = -self.STEER_LIMIT
+                                # if self.exp_val > self.STEER_LIMIT:
+                                #     self.exp_val = self.STEER_LIMIT
+                                # elif self.exp_val < -self.STEER_LIMIT:
+                                #     self.exp_val = -self.STEER_LIMIT
 
                             elif axis == 'hat0y':
                                 axis_val = int(value) / 32767
