@@ -53,7 +53,7 @@ class JoystickReader(object):
     DELTA_PLUS = 250#100
     DELTA_MINUS = 250#50
     STEER_RATIO = 1
-    STEER_LIMIT = 32767
+    STEER_LIMIT = 30000
     # STEER_PARAM = 100
 
     def __init__(self,serial, port):
@@ -522,7 +522,7 @@ class JoystickReader(object):
             result_data = int(result_data * self.STEER_LIMIT)
         
         # 1의 자리 버림
-        result_data = (result_data // 10) * 10
+        result_data = (result_data // 50) * 50
         return result_data
 
             
