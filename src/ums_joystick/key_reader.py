@@ -478,47 +478,50 @@ class JoystickReader(object):
 
         result_data = data 
 
-        if self.pre_result_data != result_data:
-            # 현재 값이 이전 값보다 클 경우
-            if self.pre_result_data < result_data:
-                result_data = data / self.STEER_LIMIT
-                # steer 값이 양수일 때
-                if data >= 0:
-                    # 현재 데이터 보정 (STEER RATIO 까지 완만하게 증가)
-                    if result_data <= self.STEER_RATIO:
-                        result_data = (1/self.STEER_RATIO) * result_data * result_data
-                        result_data = int(result_data * self.STEER_LIMIT)
-                    # 이후에는 현재 데이터 이용 
+        try:
+            if self.pre_result_data != result_data:
+                # 현재 값이 이전 값보다 클 경우
+                if self.pre_result_data < result_data:
+                    result_data = data / self.STEER_LIMIT
+                    # steer 값이 양수일 때
+                    if data >= 0:
+                        # 현재 데이터 보정 (STEER RATIO 까지 완만하게 증가)
+                        if result_data <= self.STEER_RATIO:
+                            result_data = (1/self.STEER_RATIO) * result_data * result_data
+                            result_data = int(result_data * self.STEER_LIMIT)
+                        # 이후에는 현재 데이터 이용 
+                        else:
+                            result_data = int(result_data * self.STEER_LIMIT)
+                    # steer 값이 음수일 때
                     else:
-                        result_data = int(result_data * self.STEER_LIMIT)
-                # steer 값이 음수일 때
-                else:
-                    # 현재 데이터 보정 (STEER RATIO-1 까지 완만하게 감소)
-                    if result_data <= self.STEER_RATIO - 1:
-                        result_data = (1/self.STEER_RATIO) * (result_data + 1) * (result_data + 1) - 1
-                        result_data = int(result_data * self.STEER_LIMIT)
+                        # 현재 데이터 보정 (STEER RATIO-1 까지 완만하게 감소)
+                        if result_data <= self.STEER_RATIO - 1:
+                            result_data = (1/self.STEER_RATIO) * (result_data + 1) * (result_data + 1) - 1
+                            result_data = int(result_data * self.STEER_LIMIT)
+                        else:
+                            result_data = int(result_data * self.STEER_LIMIT)
+                # 현재 값이 이전 값보다 작을 경우
+                elif self.pre_result_data >= result_data:
+                    # steer 값이 양수 일 때
+                    result_data = data / self.STEER_LIMIT
+                    if data >= 0:
+                        # 현재 데이터 보정 ( 1 - STEER RATIO 까지 완만하게 감소)
+                        if result_data >= (1 - self.STEER_RATIO):
+                            result_data = (-1/self.STEER_RATIO) * (result_data - 1) * (result_data - 1) + 1
+                            result_data = int(result_data * self.STEER_LIMIT)
+                        else:
+                            result_data = int(result_data * self.STEER_LIMIT)
                     else:
-                        result_data = int(result_data * self.STEER_LIMIT)
-            # 현재 값이 이전 값보다 작을 경우
-            elif self.pre_result_data >= result_data:
-                # steer 값이 양수 일 때
-                result_data = data / self.STEER_LIMIT
-                if data >= 0:
-                    # 현재 데이터 보정 ( 1 - STEER RATIO 까지 완만하게 감소)
-                    if result_data >= (1 - self.STEER_RATIO):
-                        result_data = (-1/self.STEER_RATIO) * (result_data - 1) * (result_data - 1) + 1
-                        result_data = int(result_data * self.STEER_LIMIT)
-                    else:
-                        result_data = int(result_data * self.STEER_LIMIT)
-                else:
-                    # 현재 데이터 보정 ( -STEER RATIO 까지 완만하게 증가)
-                    if result_data >= -self.STEER_RATIO:
-                        result_data = (-1/self.STEER_RATIO) * result_data * result_data
-                        result_data = int(result_data * self.STEER_LIMIT)
-                    else:
-                        result_data = int(result_data * self.STEER_LIMIT)
-            self.pre_result_data = result_data
-        else:
+                        # 현재 데이터 보정 ( -STEER RATIO 까지 완만하게 증가)
+                        if result_data >= -self.STEER_RATIO:
+                            result_data = (-1/self.STEER_RATIO) * result_data * result_data
+                            result_data = int(result_data * self.STEER_LIMIT)
+                        else:
+                            result_data = int(result_data * self.STEER_LIMIT)
+                self.pre_result_data = result_data
+            else:
+                result_data = int(result_data * self.STEER_LIMIT)
+        except:
             result_data = int(result_data * self.STEER_LIMIT)
         
         # 1의 자리 버림
