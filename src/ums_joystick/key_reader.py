@@ -28,14 +28,14 @@ import array
 from time import sleep
 from fcntl import ioctl
 import sys
-from threading import Thread, Condition, Semaphore
+import yaml
+from threading import Thread, Condition
 from .names import axis_names, button_names
 from .protocol import PacketProtocol
 from src.ums_serial.writer import UMDSerialWriter
 
-# class Error(Exception):
-#     def __init__(self):
-
+doc = yaml.load(open('../../param/variables.yaml', 'r'))
+print(doc)
 
 class JoystickReader(object):
 
