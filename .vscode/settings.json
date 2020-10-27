@@ -28,6 +28,5 @@
         "/opt/ros/melodic/lib/python2.7/dist-packages",
         "/home/djjin/autoware-simulator/Carla-0.9.6/PythonAPI/carla/dist/carla-0.9.6-py2.7-linux-x86_64.egg",
         "/home/djjin/autoware-simulator/Carla-0.9.6/PythonAPI"
-    ],
-    "python.pythonPath": "/usr/local/bin/python3"
+    ]
 }

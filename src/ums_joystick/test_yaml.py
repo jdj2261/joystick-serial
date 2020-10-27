@@ -1,6 +1,8 @@
 import yaml
 
-doc = yaml.load(open('../../param/variables.yaml', 'r'))
+file_path = '../../param/variables.yaml'
+
+doc = yaml.load(open(file_path, 'r'))
 print(doc)
 
 def get_configs(key,data):
