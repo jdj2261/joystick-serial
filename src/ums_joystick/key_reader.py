@@ -79,6 +79,8 @@ class JoystickReader(object):
         self.speed_val = 0
         self.brake_val = 0
         self.steer_val = 0
+        self.test_pre_val = 0
+        self.current_steer_val = 0
         self.exp_val = 0
         self.pre_val=0
         self.pre_result_data = 0
@@ -162,19 +164,23 @@ class JoystickReader(object):
             self.button_states[btn_name] = 0
 
     def insert(self):
-        value = self.speed_val 
+        value = self.current_val2 
         return value 
 
+    # def insert(self):
+    #     value = self.steer_val 
+    #     return value 
 
     def insert2(self):
         value = self.exp_val
         return value 
 
     def insert3(self):
-        value = self.steer_val
+        value = self.current_steer_val
         return value 
 
     def test_thread(self):
+        
         while True:
             # self.condition.acquire()
             if self.pre_val < self.speed_val:
@@ -209,8 +215,50 @@ class JoystickReader(object):
                     # print(self.current_val, end=" ")
                     self.current_value2 = self.current_val2.to_bytes(2, byteorder="little", signed=False)
                     sleep(0.02)
+            sleep(0.02)
             # self.condition.notify()
             # self.condition.release()
+    def steer_thread(self):
+        while True:
+            # self.condition.acquire()
+            if self.steer_val >= 0:
+                if self.test_pre_val <= self.steer_val:
+                    while self.current_steer_val <= self.steer_val:
+                        self.current_steer_val = self.current_steer_val + 1000
+
+                        if self.current_steer_val >= 32000 :
+                            self.current_steer_val = 32000
+                        # print(self.current_val, end=" ")
+                        sleep(0.04)
+                    # self.current_val = self.speed_val
+                elif self.test_pre_val >= self.steer_val:
+                    while self.current_steer_val >= self.steer_val:
+                        self.current_steer_val = self.current_steer_val - 1000
+                        sleep(0.04)
+            elif self.steer_val <=0:
+                if self.test_pre_val <= self.steer_val:
+                    while self.current_steer_val <= self.steer_val:
+                        self.current_steer_val = self.current_steer_val + 1000
+
+                        if self.current_steer_val >= 32000 :
+                            self.current_steer_val = 32000
+                        # print(self.current_val, end=" ")
+                        sleep(0.04)
+                    # self.current_val = self.speed_val
+                elif self.test_pre_val >= self.steer_val:
+                    while self.current_steer_val >= self.steer_val:
+                        self.current_steer_val = self.current_steer_val - 1000
+                        if self.current_steer_val < -32000:
+                            self.current_steer_val = -32000 
+                        sleep(0.04)
+
+            # else:
+            #     self.current_steer_val = self.steer_val
+
+            sleep(0.02)
+            # self.condition.notify()
+            # self.condition.release()
+
     def plot_thread(self):
 
         fig = plt.figure(figsize=(10,8))     #figure(도표) 생성
@@ -228,7 +276,7 @@ class JoystickReader(object):
         # y축에 표현할 값을 반환해야하고 scope 객체 선언 전 선언해야함.
 
         # 객체 생성
-        scope = Scope(ax1,self.insert, ystart = 0, ymax = 65535, title = "origin", color='b')
+        scope = Scope(ax1,self.insert, ystart = -65535, ymax = 65535, title = "origin", color='b')
         scope2 = Scope(ax2,self.insert2, ystart = -65535, ymax = 65535, title = "result", color='r')
         scope3 = Scope(ax3,self.insert3, ystart = -65535, ymax = 65535, title = "change", color='y')    
         # update 매소드 호출
@@ -243,6 +291,9 @@ class JoystickReader(object):
             t.daemon = True
             t.start()
 
+            t2 = Thread(target=self.steer_thread)
+            t2.daemon = True
+            t2.start()
  
         except RuntimeError :
             pass
@@ -281,6 +332,13 @@ class JoystickReader(object):
                 if self.__ESTOP == 'ON':
                     self.current_test = 0
 
+                if self.test_pre_val >= 32000 :
+                    self.test_pre_val = 32000 
+                elif self.test_pre_val <= -32000:
+                    self.test_pre_val = -32000
+
+                self.current_steer_val = self.current_steer_val // 10 * 10
+
                 self.current_test_value = self.current_test.to_bytes(2, byteorder="little", signed=False)
                 
                 self.__pt.speed_data[0] = self.current_test_value[0]
@@ -296,8 +354,10 @@ class JoystickReader(object):
 
                 print("accel val : {0}".format(self.current_test), end=" ")
                 print("steer val : {0}".format(self.steer_val), end=" ")
-                print("exp val : {0}".format(self.exp_val), end=" ")
-                print("packet : {0}".format(packet))
+                print("pre steer val : {0}".format(self.test_pre_val), end=" ")
+                # print("exp val : {0}".format(self.exp_val), end=" ")
+                print("test steer val : {0}".format(self.current_steer_val))
+                # print("packet : {0}".format(packet))
                 self.__writer.run(packet)
             else:
                 self.reset_value()
@@ -305,6 +365,7 @@ class JoystickReader(object):
                 sleep(0.1)
 
             self.pre_val = self.speed_val
+            self.test_pre_val = self.steer_val
             sleep(0.02) # 50Hz
 
     def reset_value(self):
@@ -314,6 +375,7 @@ class JoystickReader(object):
         self.current_test = 0
         self.brake_val = 0
         self.steer_val = 0
+        self.current_steer_val = 0
         self.exp_val = 0
 
         self.current_value = [0x00, 0x00]
@@ -418,16 +480,20 @@ class JoystickReader(object):
                             # steer
                             elif axis == 'rx':
                                 self.steer_val = int(value)
+                                if self.steer_val >= 32000 :
+                                    self.steer_val = 32000 
+                                elif self.steer_val <= -32000:
+                                    self.steer_val = -32000
 
-                                if self.steer_val == 0:
-                                    self.exp_val = 0
-                                else :     
-                                    self.exp_val = self.steer_fitting(self.steer_val)
+                                # if self.steer_val == 0:
+                                #     self.exp_val = 0
+                                # else :     
+                                #     self.exp_val = self.steer_fitting(self.steer_val)
 
-                                if self.exp_val  > 32000 :
-                                    self.exp_val  = 32000
-                                elif self.exp_val  < -32000:
-                                    self.exp_val  = -32000
+                                # if self.exp_val  > 32000 :
+                                #     self.exp_val  = 32000
+                                # elif self.exp_val  < -32000:
+                                #     self.exp_val  = -32000
                 
                                 # print("steer_val : {0}, exp_val : {1}".format(self.steer_val,int(self.exp_val)))
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
