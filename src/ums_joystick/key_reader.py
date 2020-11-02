@@ -191,6 +191,8 @@ class JoystickReader(object):
                     elif self.__GEAR == 'GBACKWARD':
                         self.current_val = self.current_val + (self.DELTA_PLUS * 2)
                     # 액셀 최댓값 설정 (60000)
+                    else:
+                        self.current_val = 0
                     if self.current_val > self.ACCEL_MAX:
                         self.current_val = self.ACCEL_MAX
                     sleep(0.02)
@@ -202,7 +204,9 @@ class JoystickReader(object):
                         self.current_val = self.current_val - self.DELTA_MINUS
                     elif self.__GEAR == 'GBACKWARD':
                         self.current_val = self.current_val - (self.DELTA_MINUS * 3)                   
-
+                                        # 액셀 최댓값 설정 (60000)
+                    else:
+                        self.current_val = 0
                     if self.current_val < 0:
                         self.current_val = self.accel_val + self.APS_VAL
                     sleep(0.02)
