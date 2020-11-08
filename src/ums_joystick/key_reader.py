@@ -19,6 +19,8 @@ Description: Logitech Joystick key reader
 
 10 / 21 조종기 횡방향 테스트
 업데이트 1. 횡방향 민감도 조절 (2차함수 이용)
+
+11 / 05 세종시 4호차, 6호차 최종 업데이트
 *********************************************
 """
 
@@ -28,26 +30,10 @@ import array
 from time import sleep
 from fcntl import ioctl
 import sys
-# import yaml
 from threading import Thread, Condition
 from .names import axis_names, button_names
 from .protocol import PacketProtocol
 from src.ums_serial.writer import UMDSerialWriter
-
-# doc = yaml.load(open('param/variables.yaml', 'r'))
-# print(doc)
-
-# def get_configs(key,data):
-#     if key in data.keys():
-#         return int(data[key]) 
-
-# print("ACCEL_MAX : {}".format(get_configs('ACCEL_MAX', doc)))
-# print("APS_VAL : {}".format(get_configs('APS_VAL', doc)))
-# print("DELTA_MINUS : {}".format(get_configs('DELTA_MINUS', doc)))
-# print("DELTA_PLUS : {}".format(get_configs('DELTA_PLUS', doc)))
-# print("STEER_LIMIT : {}".format(get_configs('STEER_LIMIT', doc)))
-# print("STEER_RATIO : {}".format(get_configs('STEER_RATIO', doc)))
-
 
 
 class JoystickReader(object):
@@ -64,12 +50,12 @@ class JoystickReader(object):
     """
     CLASS VARIABLES
     """
-    ACCEL_MAX   = 60000 #get_configs('ACCEL_MAX', doc)
-    APS_VAL     = 2500 #get_configs('APS_VAL', doc) #2500 #5000
-    DELTA_PLUS  = 100 #get_configs('DELTA_PLUS', doc) #100
-    DELTA_MINUS = 100 #get_configs('DELTA_MINUS', doc) #100
-    STEER_RATIO = 1 #get_configs('STEER_RATIO', doc) #1
-    STEER_LIMIT = 32000 #get_configs('STEER_LIMIT', doc) #32000 # default 32767
+    ACCEL_MAX   = 60000 
+    APS_VAL     = 2500 
+    DELTA_PLUS  = 100 
+    DELTA_MINUS = 100 
+    STEER_RATIO = 1 
+    STEER_LIMIT = 32000  
 
     def __init__(self, serial, port):
 
