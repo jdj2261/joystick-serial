@@ -21,6 +21,8 @@ Description: Logitech Joystick key reader
 업데이트 1. 횡방향 민감도 조절 (2차함수 이용)
 
 11 / 05 세종시 4호차, 6호차 최종 업데이트
+
+11 / 24 아이솔 4호차 업데이트 (조종기 민감도 이슈)
 *********************************************
 """
 
@@ -50,12 +52,14 @@ class JoystickReader(object):
     """
     CLASS VARIABLES
     """
-    ACCEL_MAX   = 60000 
+    ACCEL_MAX   = 50000 #60000
+    ACCEL_RATIO = 0.7
     APS_VAL     = 2500 
-    DELTA_PLUS  = 100 
-    DELTA_MINUS = 100 
-    STEER_RATIO = 1 
-    STEER_LIMIT = 32000  
+    DELTA_PLUS  = 50 #100 
+    DELTA_MINUS = 50 #100 
+    STEER_RATIO = 0.8
+    STEER_LIMIT = 28000 # 32000  
+
 
     def __init__(self, serial, port):
 
@@ -359,7 +363,7 @@ class JoystickReader(object):
                                 상태값(0, 1, -1)을 저장
                                 0 ~ 65534
                                 """
-                                self.accel_val = int(value) + 32767
+                                self.accel_val = int((value + 32767) * self.ACCEL_RATIO)  
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
 
                             # brake
@@ -379,7 +383,7 @@ class JoystickReader(object):
 
                             # steer
                             elif axis == 'rx':
-                                self.steer_val = int(value) 
+                                self.steer_val = int(value * self.STEER_RATIO) 
                                 # if self.steer_val == 0:
                                 #     self.exp_val = 0
                                 # else:
