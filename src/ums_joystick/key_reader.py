@@ -22,7 +22,7 @@ Description: Logitech Joystick key reader
 
 11 / 05 세종시 4호차, 6호차 최종 업데이트
 
-11 / 24 아이솔 4호차 업데이트 (조종기 민감도 이슈)
+11 / 24 아이솔 3, 4호차 업데이트 (조종기 민감도 이슈)
 *********************************************
 """
 
@@ -58,7 +58,7 @@ class JoystickReader(object):
     DELTA_PLUS  = 50 #100 
     DELTA_MINUS = 50 #100 
     STEER_RATIO = 0.8
-    STEER_LIMIT = 28000 # 32000  
+    STEER_LIMIT = 30000 # 32000  
 
 
     def __init__(self, serial, port):
