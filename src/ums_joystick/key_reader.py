@@ -23,6 +23,8 @@ Description: Logitech Joystick key reader
 11 / 05 세종시 4호차, 6호차 최종 업데이트
 
 11 / 24 아이솔 3, 4호차 업데이트 (조종기 민감도 이슈)
+
+12 / 04 크루즈 모드 추가 및 조종기 버그 수정
 *********************************************
 """
 
@@ -53,12 +55,14 @@ class JoystickReader(object):
     CLASS VARIABLES
     """
     ACCEL_MAX   = 50000 #60000
-    ACCEL_RATIO = 0.7
+    ACCEL_RATIO = 1.0
     APS_VAL     = 2500 
-    DELTA_PLUS  = 50 #100 
+    DELTA_PLUS  = 150 #100 
     DELTA_MINUS = 50 #100 
+    CRUISE_VAL  = 5000
     STEER_RATIO = 0.8
     STEER_LIMIT = 30000 # 32000  
+
 
 
     def __init__(self, serial, port):
@@ -74,21 +78,26 @@ class JoystickReader(object):
         self.__ESTOP = 'OFF'
         self.__GEAR = 'GNEUTRAL'
         self.__WHEEL = 'WFORWARD'
+
         self.__isConnect_joy = True
-        self.__cnt = 0
+        self.__isThread = False
+        self.__isCruise = False
+        self.__initCruise = True
 
         self.speed_value = [0x00, 0x00]
         self.brake_value = [0x00, 0x00]
         self.steer_value = [0x00, 0x00]
         self.exp_value = [0x00, 0x00]
 
-        
         self.accel_val = 0 # 실제 accel raw data
         self.brake_val = 0
         self.steer_val = 0
         self.pre_exp_data = 0
         self.exp_val = 0
         self.pre_accel_val = 0
+
+        self.cruise_val = 0
+        self.__aps_val = 0
         self.current_val = self.accel_val + self.APS_VAL
         self.speed_val = self.accel_val + self.APS_VAL
 
@@ -172,6 +181,7 @@ class JoystickReader(object):
             self.condition.acquire()
             # accel button을 누를 경우
             if self.pre_accel_val < self.accel_val:
+                self.__initCruise = True
                 # accel axis value가 될 때 까지 0.02초 마다
                 while self.current_val <= self.accel_val:
                     # GEAR가 전진일 경우 DELTA PLUS 만큼 증가
@@ -188,7 +198,8 @@ class JoystickReader(object):
                     sleep(0.02)
             
             # accel button을 뗄 경우
-            elif self.pre_accel_val >= self.accel_val:
+            elif self.pre_accel_val > self.accel_val:
+                self.__initCruise = True
                 while self.current_val >= self.accel_val:
                     if self.__GEAR == 'GFORWARD':
                         self.current_val = self.current_val - self.DELTA_MINUS
@@ -200,7 +211,12 @@ class JoystickReader(object):
                     if self.current_val < 0:
                         self.current_val = self.accel_val + self.APS_VAL
                     sleep(0.02)
-            
+            else:
+                if self.accel_val > self.speed_val:
+                    self.accel_val += 1
+                else:
+                    self.accel_val -= 1
+
             self.condition.notify()
             # 쓰레드 잠김 해제
             self.condition.release()
@@ -218,30 +234,62 @@ class JoystickReader(object):
                 if self.__isConnect_joy:
                     self.__pt.count_alive()
 
+                    if self.APS_VAL < 2500:
+                        self.APS_VAL = 2500
+                    elif self.APS_VAL > self.ACCEL_MAX:
+                        self.APS_VAL = self.ACCEL_MAX
+
+                    if self.accel_val == 0:
+                        self.__isThread = False
+                    else:
+                        self.__isCruise = False
+                        self.__isThread = True
+
+                    if  self.accel_val != 0 or self.__GEAR == "GNEUTRAL":
+                        self.cruise_val = 2500
+
+                    if self.accel_val < 0 :
+                        self.accel_val = 0
                     # brake 값 0일 경우
                     if self.brake_val == 0:
                         # 현재 액셀은 APS_VAL
                         # accel value 최솟값 설정
+                        # self.cruise_val = self.APS_VAL
                         if self.current_val < self.APS_VAL:
                             self.current_val = self.APS_VAL
-                        self.speed_val = self.current_val
+                        elif self.cruise_val > self.ACCEL_MAX:
+                            self.cruise_val = self.ACCEL_MAX
+                        
+                        if self.__isCruise:
+                            # self.cruise_val = self.APS_VAL
+                            self.speed_val = self.cruise_val
+                            self.current_val = self.cruise_val
+                        else:
+                            self.APS_VAL = 2500
+                            self.speed_val = self.current_val
                     # 0이 아닐 경우
                     else:
                         # speed value 0
+                        self.__isCruise = True
+                        self.cruise_val = 2500
                         self.current_val = 0
                         self.speed_val = 0
 
                     # ESTOP 걸릴 경우 
                     if self.__ESTOP == 'ON':
                         # speed value 0
+                        self.__isCruise = False
+                        self.cruise_val = 0
                         self.speed_val = 0
+                        self.current_val = 0
 
                     if self.steer_val == 0:
                         self.exp_val = 0
                     else:
-                        self.exp_val = self.steer_fitting(self.steer_val)
-                        # self.exp_val = int(
-                        #     (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
+                        # self.exp_val = self.steer_fitting(self.steer_val)
+                        self.exp_val = int(
+                            (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
+                        self.exp_val = (self.exp_val // 10) * 10
 
                     if self.exp_val > self.STEER_LIMIT:
                         self.exp_val = self.STEER_LIMIT
@@ -271,9 +319,19 @@ class JoystickReader(object):
                         ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
                     self.__writer.run(packet)
 
+                    # print("accel_val : {} ". format(self.accel_val), end="")
+                    # print("pre_val : {} ". format(self.pre_accel_val), end="")
+                    # print("current_val : {} ". format(self.current_val), end="")
+
+                    print("tread mode : {} ". format(self.__isThread), end="")
+                    print("cruise mode : {} ". format(self.__isCruise), end="")
+                    print("init mode : {} ". format(self.__initCruise), end="")
+                    print("current_val : {} ". format(self.current_val), end="")
+                    print("cruise_val : {} ". format(self.cruise_val), end="")
+                  
                     print("speed_val : {0} ".format(self.speed_val), end=" ")
-                    print("steer_val : {0} ".format(self.steer_val), end=" ")
-                    print("fitting_steer_val : {0} ".format(self.exp_val), end=" ")
+                    # print("steer_val : {0} ".format(self.steer_val), end=" ")
+                    # print("fitting_steer_val : {0} ".format(self.exp_val), end=" ")
                     print("packet : {0}".format(packet))
 
                 else:
@@ -339,6 +397,43 @@ class JoystickReader(object):
                                 if button == 'mode':
                                     self.__ESTOP = 'ON'
 
+                                if button == 'start':
+                                    self.__isCruise = True
+                                    # self.__initCruise = True
+                                    self.cruise_val = self.speed_val
+
+                                    if (self.__isThread is not True) and self.__isCruise:
+                                        if self.__initCruise:
+                                            self.cruise_val = self.cruise_val 
+                                            self.__initCruise = False
+                                        else:
+                                            self.cruise_val = self.cruise_val + self.CRUISE_VAL
+                                    # elif self.__initCruise:
+                                    #     self.__initCruise = False
+                                    #     self.cruise_val = self.cruise_val 
+
+                                    # elif self.__initCruise is not True:
+                                    #     self.__initCruise = True
+                                    #     self.cruise_val = self.cruise_val + self.CRUISE_VAL
+                                    else:
+                                        self.APS_VAL += self.CRUISE_VAL
+
+                                elif button == 'select':
+                                    self.__isCruise = True
+                                    self.cruise_val = self.speed_val
+                                    if (self.__isThread is not True) and self.__isCruise:
+                                        if self.__initCruise:
+                                            self.cruise_val = self.cruise_val 
+                                            self.__initCruise = False
+                                        else:
+                                            self.cruise_val = self.cruise_val - self.CRUISE_VAL
+                                    else:
+                                        self.APS_VAL -= self.CRUISE_VAL
+
+                                    if self.cruise_val < self.APS_VAL:
+                                        self.cruise_val = self.APS_VAL
+
+
                                 if result_button == 'OFF':
                                     self.__ESTOP = 'OFF'
                                 elif result_button == 'ON':
@@ -383,7 +478,8 @@ class JoystickReader(object):
 
                             # steer
                             elif axis == 'rx':
-                                self.steer_val = int(value * self.STEER_RATIO) 
+                                self.steer_val = (value // 10) * 10 
+
                                 # if self.steer_val == 0:
                                 #     self.exp_val = 0
                                 # else:
