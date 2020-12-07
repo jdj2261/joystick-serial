@@ -56,12 +56,12 @@ class JoystickReader(object):
     """
     ACCEL_MAX   = 50000 #60000
     ACCEL_RATIO = 1.0
-    APS_VAL     = 0 
+    APS_VAL     = 2500 
     DELTA_PLUS  = 150 #100 
     DELTA_MINUS = 50 #100 
     CRUISE_VAL  = 5000
     STEER_RATIO = 0.8
-    STEER_LIMIT = 30000 # 32000  
+    STEER_LIMIT = 32000 # 32000  
 
 
 
