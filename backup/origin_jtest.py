@@ -186,7 +186,11 @@ while True:
                 # 값을 32767로 나눠서 0 또는 1, -1 로 표시
                 # 축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
                 # 0보다 큰지 작은지 0인지를 구분하기 위함이다.
+                if axis == "ry":
+                    continue
                 fvalue = value 
+                if abs(fvalue) < 1000:
+                    fvalue = 0
                 # 상태값(0, 1, -1)을 저장
                 axis_states[axis] = fvalue
                 print("%s: %.3f" % (axis, fvalue))
