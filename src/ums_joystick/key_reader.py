@@ -292,10 +292,10 @@ class JoystickReader(object):
                     if self.steer_val == 0:
                         self.exp_val = 0
                     else:
-                        self.exp_val = self.steer_fitting(self.steer_val)
+                        # self.exp_val = self.steer_fitting(self.steer_val)
                         # fitting_val = int(
                         #     (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
-                        self.exp_val = (self.exp_val// 10) * 10
+                        self.exp_val = (self.steer_val// 10) * 10
 
                     if self.exp_val > self.STEER_LIMIT:
                         self.exp_val = self.STEER_LIMIT
