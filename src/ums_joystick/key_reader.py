@@ -63,8 +63,6 @@ class JoystickReader(object):
     STEER_RATIO = 0.8
     STEER_LIMIT = 32700 # 32000  
 
-
-
     def __init__(self, serial, port):
 
         self.__serial = serial
@@ -228,42 +226,19 @@ class JoystickReader(object):
             control_t = Thread(target=self.control_thread)
             control_t.daemon = True
             control_t.start()
-            while True:        # alive count (0 ~ 255)
+            while True:        
+                # alive count (0 ~ 255)
                 # send packet
 
                 if self.__isConnect_joy:
                     self.__pt.count_alive()
 
-                    if self.__aps_val < self.APS_VAL:
-                        self.__aps_val = self.APS_VAL
-                    elif self.__aps_val > self.ACCEL_MAX:
-                        self.__aps_val = self.ACCEL_MAX
+                    self.limitAPS()
+                    self.limitAccel()
 
-                    if self.accel_val == 0:
-                        self.__isThread = False
-                    else:
-                        self.__isCruise = False
-                        self.__isThread = True
-
-                    # if  self.accel_val != 0 or self.__GEAR == "GNEUTRAL":
-                    #     self.cruise_val = self.APS_VAL
-
-                    if self.accel_val < 0 :
-                        self.accel_val = 0
-                    elif self.accel_val !=0:
-                        self.cruise_val = self.APS_VAL
                     # brake 값 0일 경우
                     if self.brake_val == 0:
-                        # 현재 액셀은 APS_VAL
-                        # accel value 최솟값 설정
-                        # self.cruise_val = self.__aps_val
-                        if self.current_val < self.__aps_val:
-                            self.current_val = self.__aps_val
-                        elif self.cruise_val > self.ACCEL_MAX:
-                            self.cruise_val = self.ACCEL_MAX
-                        
                         if self.__isCruise:
-                            # self.cruise_val = self.__aps_val
                             self.speed_val = self.cruise_val
                             self.current_val = self.cruise_val
                         else:
@@ -271,23 +246,16 @@ class JoystickReader(object):
                             self.speed_val = self.current_val
                     # 0이 아닐 경우
                     else:
-                        # speed value 0
-                        self.__isCruise = True
                         self.cruise_val = self.APS_VAL
                         self.current_val = 0
                         self.speed_val = 0
 
-                    # ESTOP 걸릴 경우 
-                    if self.__ESTOP == 'ON':
-                        # speed value 0
+                    # ESTOP 걸릴 경우, 기어가 중립일 경우
+                    if self.__ESTOP == 'ON' or self.__GEAR =="GNEUTRAL":
                         self.__isCruise = False
                         self.cruise_val = 0
                         self.speed_val = 0
                         self.current_val = 0
-                    elif self.__GEAR =="GNEUTRAL":
-                        self.speed_val = 0
-                        self.current_val = 0
-                        self.cruise_val = self.APS_VAL
 
                     if self.steer_val == 0:
                         self.exp_val = 0
@@ -295,39 +263,10 @@ class JoystickReader(object):
                         # self.exp_val = self.steer_fitting(self.steer_val)
                         # fitting_val = int(
                         #     (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
-                        self.exp_val = (self.steer_val// 10) * 10
-
-                    if self.exp_val > self.STEER_LIMIT:
-                        self.exp_val = self.STEER_LIMIT
-                    elif self.exp_val < -self.STEER_LIMIT:
-                        self.exp_val = -self.STEER_LIMIT
-
-                    self.speed_value = self.speed_val.to_bytes(
-                        2, byteorder="little", signed=False)
-                    self.brake_value = self.brake_val.to_bytes(
-                        2, byteorder="little", signed=False)
-                    self.steer_value = self.steer_val.to_bytes(
-                        2, byteorder="little", signed=True)
-                    self.exp_value = self.exp_val.to_bytes(
-                        2, byteorder="little", signed=True)
-
-                    self.__pt.speed_data[0] = self.speed_value[0]
-                    self.__pt.speed_data[1] = self.speed_value[1]
-                    self.__pt.brake_data[0] = self.brake_value[0]
-                    self.__pt.brake_data[1] = self.brake_value[1]
-                    self.__pt.steer_data[0] = self.steer_value[0]
-                    self.__pt.steer_data[1] = self.steer_value[1]
-                    self.__pt.steer_data[2] = self.exp_value[0]
-                    self.__pt.steer_data[3] = self.exp_value[1]
-
-                    # packet 보내기
-                    packet = self.__pt.makepacket(
-                        ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
-                    self.__writer.run(packet)
-
-                    # print("accel_val : {} ". format(self.accel_val), end="")
-                    # print("pre_val : {} ". format(self.pre_accel_val), end="")
-                    # print("current_val : {} ". format(self.current_val), end="")
+                        self.limitSteer()
+                    
+                    self.value2bytes()
+                    packet = self.__pt.makepacket(ESTOPMODE=self.__ESTOP, GEARMODE=self.__GEAR, WHEELMODE=self.__WHEEL)
 
                     # print("tread mode : {} ". format(self.__isThread), end="")
                     # print("cruise mode : {} ". format(self.__isCruise), end="")
@@ -347,6 +286,7 @@ class JoystickReader(object):
 
                 self.pre_accel_val = self.accel_val
                 sleep(0.02)  # 50Hz
+
         except KeyboardInterrupt:
             control_t.join()
         except Exception as e:
@@ -358,6 +298,7 @@ class JoystickReader(object):
         self.speed_val = 0
         self.brake_val = 0
         self.steer_val = 0
+        self.cruise_val = self.APS_VAL
         self.exp_val = 0
 
         self.speed_value = [0x00, 0x00]
@@ -408,37 +349,30 @@ class JoystickReader(object):
                                     # self.__initCruise = True
                                     self.cruise_val = self.speed_val
 
-                                    if (self.__isThread is not True) and self.__isCruise:
-                                        if self.__initCruise:
-                                            self.cruise_val = self.cruise_val 
-                                            self.__initCruise = False
-                                        else:
-                                            self.cruise_val = self.cruise_val + self.CRUISE_VAL
-                                    # elif self.__initCruise:
-                                    #     self.__initCruise = False
-                                    #     self.cruise_val = self.cruise_val 
+                                if button == 'start':
+                                    self.__isCruise = True
 
-                                    # elif self.__initCruise is not True:
-                                    #     self.__initCruise = True
-                                    #     self.cruise_val = self.cruise_val + self.CRUISE_VAL
+                                    if self.__initCruise:
+                                        self.cruise_val = self.speed_val
+                                        self.__initCruise = False
                                     else:
-                                        self.__aps_val += self.CRUISE_VAL
+                                        self.cruise_val = self.cruise_val + self.CRUISE_VAL
+
+                                    if self.cruise_val > self.ACCEL_MAX:
+                                        self.cruise_val = self.ACCEL_MAX
 
                                 elif button == 'select':
                                     self.__isCruise = True
-                                    self.cruise_val = self.speed_val
-                                    if (self.__isThread is not True) and self.__isCruise:
-                                        if self.__initCruise:
-                                            self.cruise_val = self.cruise_val 
-                                            self.__initCruise = False
-                                        else:
-                                            self.cruise_val = self.cruise_val - self.CRUISE_VAL
+
+                                    if self.__initCruise:
+                                        self.cruise_val = self.speed_val
+                                        self.__initCruise = False
                                     else:
-                                        self.__aps_val -= self.CRUISE_VAL
+                                        self.cruise_val = self.cruise_val - self.CRUISE_VAL
+                                    # else:
 
                                     if self.cruise_val < self.__aps_val:
                                         self.cruise_val = self.__aps_val
-
 
                                 if result_button == 'OFF':
                                     self.__ESTOP = 'OFF'
@@ -487,18 +421,6 @@ class JoystickReader(object):
                                 self.steer_val = int(value)  
                                 if abs(self.steer_val) < 1000:
                                     self.steer_val = 0
-
-                                # if self.steer_val == 0:
-                                #     self.exp_val = 0
-                                # else:
-                                #     self.exp_val = self.steer_fitting(self.steer_val)
-                                #     # self.exp_val = int(
-                                #     #     (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
-
-                                # if self.exp_val > self.STEER_LIMIT:
-                                #     self.exp_val = self.STEER_LIMIT
-                                # elif self.exp_val < -self.STEER_LIMIT:
-                                #     self.exp_val = -self.STEER_LIMIT
 
                             elif axis == 'hat0y':
                                 axis_val = int(value) / 32767
@@ -581,6 +503,52 @@ class JoystickReader(object):
         # 1의 자리 버림
         result_data = (result_data // 10) * 10
         return result_data
+
+    def limitAPS(self):
+        if self.__aps_val < self.APS_VAL:
+            self.__aps_val = self.APS_VAL
+        elif self.__aps_val > self.ACCEL_MAX:
+            self.__aps_val = self.ACCEL_MAX
+    
+    def limitAccel(self):
+        if self.accel_val == 0:
+            self.__isThread = False
+        else:
+            self.__isCruise = False
+            self.__isThread = True
+
+        if self.accel_val < 0 :
+            self.accel_val = 0
+        elif self.accel_val !=0:
+            self.cruise_val = self.APS_VAL
+
+        if self.current_val < self.__aps_val:
+            self.current_val = self.__aps_val
+
+    def limitSteer(self):
+        self.exp_val = (self.steer_val// 10) * 10
+        if self.exp_val > self.STEER_LIMIT:
+            self.exp_val = self.STEER_LIMIT
+        elif self.exp_val < -self.STEER_LIMIT:
+            self.exp_val = -self.STEER_LIMIT
+
+    def value2bytes(self):
+        self.speed_value = self.speed_val.to_bytes(
+            2, byteorder="little", signed=False)
+        self.brake_value = self.brake_val.to_bytes(
+            2, byteorder="little", signed=False)
+        self.steer_value = self.steer_val.to_bytes(
+            2, byteorder="little", signed=True)
+        self.exp_value = self.exp_val.to_bytes(
+            2, byteorder="little", signed=True)
+
+        self.__pt.speed_data[1] = self.speed_value[1]
+        self.__pt.brake_data[0] = self.brake_value[0]
+        self.__pt.brake_data[1] = self.brake_value[1]
+        self.__pt.steer_data[0] = self.steer_value[0]
+        self.__pt.steer_data[1] = self.steer_value[1]
+        self.__pt.steer_data[2] = self.exp_value[0]
+        self.__pt.steer_data[3] = self.exp_value[1]
 
     def reconect(self):
         # print("test")
