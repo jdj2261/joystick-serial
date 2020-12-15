@@ -25,6 +25,8 @@ Description: Logitech Joystick key reader
 11 / 24 아이솔 3, 4호차 업데이트 (조종기 민감도 이슈)
 
 12 / 04 크루즈 모드 추가 및 조종기 버그 수정
+
+12 / 15 X-Box 조종기 모드 추가 및 파라미터 변경
 *********************************************
 """
 
@@ -54,12 +56,13 @@ class JoystickReader(object):
     """
     CLASS VARIABLES
     """
-    ACCEL_MAX   = 50000 #60000
+    ACCEL_MAX   = 40000 #50000
     ACCEL_RATIO = 1.0
     APS_VAL     = 2500 
-    DELTA_PLUS  = 150 #100 
-    DELTA_MINUS = 50 #100 
+    DELTA_PLUS  = 100 #100 
+    DELTA_MINUS = 200 #100 
     CRUISE_VAL  = 5000
+    CRUISE_SUB_VAL = 2500
     STEER_RATIO = 0.8
     STEER_LIMIT = 32700 # 32000  
 
@@ -184,7 +187,10 @@ class JoystickReader(object):
                 while self.current_val <= self.accel_val:
                     # GEAR가 전진일 경우 DELTA PLUS 만큼 증가
                     if self.__GEAR == 'GFORWARD':
-                        self.current_val = self.current_val + self.DELTA_PLUS
+                        if self.current_val <= 25000:
+                            self.current_val = self.current_val + self.DELTA_PLUS
+                        else:
+                            self.current_val = (int)(self.current_val + self.DELTA_PLUS / 4)
                     # GEAR가 후진일 경우 DELTA PLUS * 2 만큼 증가
                     elif self.__GEAR == 'GBACKWARD':
                         self.current_val = self.current_val + (self.DELTA_PLUS * 2)
@@ -274,10 +280,11 @@ class JoystickReader(object):
                     # print("current_val : {} ". format(self.current_val), end="")
                     # print("cruise_val : {} ". format(self.cruise_val), end="")
                   
-                    print("speed_val : {0} ".format(self.speed_val), end=" ")
-                    print("steer_val : {0} ".format(self.steer_val), end=" ")
-                    print("fitting_steer_val : {0} ".format(self.exp_val), end=" ")
-                    print("packet : {0}".format(packet))
+                    # print("speed_val : {0} ".format(self.speed_val), end=" ")
+                    # print("steer_val : {0} ".format(self.steer_val), end=" ")
+                    # print("fitting_steer_val : {0} ".format(self.exp_val), end=" ")
+                    # print("packet : {0}".format(packet))
+                    self.__writer.run(packet)
 
                 else:
                     self.reset_value()
@@ -453,56 +460,56 @@ class JoystickReader(object):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
             exit(0)
 
-    def steer_fitting(self, data):
+    # def steer_fitting(self, data):
 
-        result_data = data 
+    #     result_data = data 
 
-        if self.pre_exp_data != result_data:
-            # 현재 값이 이전 값보다 클 경우
-            if self.pre_exp_data < result_data:
-                result_data = data / self.STEER_LIMIT
-                # steer 값이 양수일 때
-                if data >= 0:
-                    # 현재 데이터 보정 (STEER RATIO 까지 완만하게 증가)
-                    if result_data <= self.STEER_RATIO:
-                        result_data = (1/self.STEER_RATIO) * result_data * result_data
-                        result_data = int(result_data * self.STEER_LIMIT)
-                    # 이후에는 현재 데이터 이용 
-                    else:
-                        result_data = int(result_data * self.STEER_LIMIT)
-                # steer 값이 음수일 때
-                else:
-                    # 현재 데이터 보정 (STEER RATIO-1 까지 완만하게 감소)
-                    if result_data <= self.STEER_RATIO - 1:
-                        result_data = (1/self.STEER_RATIO) * (result_data + 1) * (result_data + 1) - 1
-                        result_data = int(result_data * self.STEER_LIMIT)
-                    else:
-                        result_data = int(result_data * self.STEER_LIMIT)
-            # 현재 값이 이전 값보다 작을 경우
-            elif self.pre_exp_data >= result_data:
-                # steer 값이 양수 일 때
-                result_data = data / self.STEER_LIMIT
-                if data >= 0:
-                    # 현재 데이터 보정 ( 1 - STEER RATIO 까지 완만하게 감소)
-                    if result_data >= (1 - self.STEER_RATIO):
-                        result_data = (-1/self.STEER_RATIO) * (result_data - 1) * (result_data - 1) + 1
-                        result_data = int(result_data * self.STEER_LIMIT)
-                    else:
-                        result_data = int(result_data * self.STEER_LIMIT)
-                else:
-                    # 현재 데이터 보정 ( -STEER RATIO 까지 완만하게 증가)
-                    if result_data >= -self.STEER_RATIO:
-                        result_data = (-1/self.STEER_RATIO) * result_data * result_data
-                        result_data = int(result_data * self.STEER_LIMIT)
-                    else:
-                        result_data = int(result_data * self.STEER_LIMIT)
-            self.pre_exp_data = result_data
-        else:
-            result_data = int(data)
+    #     if self.pre_exp_data != result_data:
+    #         # 현재 값이 이전 값보다 클 경우
+    #         if self.pre_exp_data < result_data:
+    #             result_data = data / self.STEER_LIMIT
+    #             # steer 값이 양수일 때
+    #             if data >= 0:
+    #                 # 현재 데이터 보정 (STEER RATIO 까지 완만하게 증가)
+    #                 if result_data <= self.STEER_RATIO:
+    #                     result_data = (1/self.STEER_RATIO) * result_data * result_data
+    #                     result_data = int(result_data * self.STEER_LIMIT)
+    #                 # 이후에는 현재 데이터 이용 
+    #                 else:
+    #                     result_data = int(result_data * self.STEER_LIMIT)
+    #             # steer 값이 음수일 때
+    #             else:
+    #                 # 현재 데이터 보정 (STEER RATIO-1 까지 완만하게 감소)
+    #                 if result_data <= self.STEER_RATIO - 1:
+    #                     result_data = (1/self.STEER_RATIO) * (result_data + 1) * (result_data + 1) - 1
+    #                     result_data = int(result_data * self.STEER_LIMIT)
+    #                 else:
+    #                     result_data = int(result_data * self.STEER_LIMIT)
+    #         # 현재 값이 이전 값보다 작을 경우
+    #         elif self.pre_exp_data >= result_data:
+    #             # steer 값이 양수 일 때
+    #             result_data = data / self.STEER_LIMIT
+    #             if data >= 0:
+    #                 # 현재 데이터 보정 ( 1 - STEER RATIO 까지 완만하게 감소)
+    #                 if result_data >= (1 - self.STEER_RATIO):
+    #                     result_data = (-1/self.STEER_RATIO) * (result_data - 1) * (result_data - 1) + 1
+    #                     result_data = int(result_data * self.STEER_LIMIT)
+    #                 else:
+    #                     result_data = int(result_data * self.STEER_LIMIT)
+    #             else:
+    #                 # 현재 데이터 보정 ( -STEER RATIO 까지 완만하게 증가)
+    #                 if result_data >= -self.STEER_RATIO:
+    #                     result_data = (-1/self.STEER_RATIO) * result_data * result_data
+    #                     result_data = int(result_data * self.STEER_LIMIT)
+    #                 else:
+    #                     result_data = int(result_data * self.STEER_LIMIT)
+    #         self.pre_exp_data = result_data
+    #     else:
+    #         result_data = int(data)
         
-        # 1의 자리 버림
-        result_data = (result_data // 10) * 10
-        return result_data
+    #     # 1의 자리 버림
+    #     result_data = (result_data // 10) * 10
+    #     return result_data
 
     def limitAPS(self):
         if self.__aps_val < self.APS_VAL:
