@@ -30,8 +30,8 @@ class UMDSerial():
     def waitPort(self):
 
         while(True) : 
-            self.__is_serial_connect = self.open(UMDSerial.port_name)
-            #self.__is_serial_connect = True
+            #self.__is_serial_connect = self.open(UMDSerial.port_name)
+            self.__is_serial_connect = True
   
             # 시리얼 연결이 되면
             if self.__is_serial_connect == True :
