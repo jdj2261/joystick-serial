@@ -57,12 +57,16 @@ class JoystickReader(object):
     CLASS VARIABLES
     """
     ACCEL_MAX   = 40000 #50000
+    ACCEL_Threshold = 25000
     ACCEL_RATIO = 1.0
-    APS_VAL     = 2500 
+
     DELTA_PLUS  = 100 #100 
     DELTA_MINUS = 200 #100 
+
+    APS_VAL     = 2500 
     CRUISE_VAL  = 5000
-    CRUISE_SUB_VAL = 2500
+    
+
     STEER_RATIO = 0.8
     STEER_LIMIT = 32700 # 32000  
 
@@ -187,7 +191,7 @@ class JoystickReader(object):
                 while self.current_val <= self.accel_val:
                     # GEAR가 전진일 경우 DELTA PLUS 만큼 증가
                     if self.__GEAR == 'GFORWARD':
-                        if self.current_val <= 25000:
+                        if self.current_val <= self.ACCEL_Threshold:
                             self.current_val = self.current_val + self.DELTA_PLUS
                         else:
                             self.current_val = (int)(self.current_val + self.DELTA_PLUS / 4)
@@ -266,9 +270,6 @@ class JoystickReader(object):
                     if self.steer_val == 0:
                         self.exp_val = 0
                     else:
-                        # self.exp_val = self.steer_fitting(self.steer_val)
-                        # fitting_val = int(
-                        #     (pow((self.steer_val/32767), 2) * 32767 * (self.steer_val / abs(self.steer_val))))
                         self.limitSteer()
                     
                     self.value2bytes()
@@ -375,7 +376,7 @@ class JoystickReader(object):
                                         self.cruise_val = self.speed_val
                                         self.__initCruise = False
                                     else:
-                                        self.cruise_val = self.cruise_val - self.CRUISE_VAL
+                                        self.cruise_val = self.cruise_val - int(self.CRUISE_VAL / 2)
                                     # else:
 
                                     if self.cruise_val < self.__aps_val:
