@@ -66,7 +66,6 @@ class JoystickReader(object):
     APS_VAL     = 2500 
     CRUISE_VAL  = 5000
     
-
     STEER_RATIO = 0.8
     STEER_LIMIT = 32700 # 32000  
 
