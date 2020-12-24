@@ -27,4 +27,4 @@ wheels/
 *.egg
 
 .vscode
-__pycache__/
+*/__pycache__
