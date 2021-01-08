@@ -137,7 +137,9 @@ class JoystickReader(object):
         js_name = buf.tobytes().rstrip(b'\x00').decode('utf-8')  # 0x00 비어있는 값 제거
         print('Device name: %s' % js_name)
 
-        if ("Microsoft" or "Generic") in js_name:
+        if "Microsoft" in js_name:
+            return True
+        elif "Generic" in js_name:
             return True
         else:
             return False
