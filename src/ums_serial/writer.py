@@ -12,13 +12,17 @@ import serial
 from time import sleep
 
 class UMDSerialWriter():
-    def __init__(self, serial, port):
+    def __init__(self, serial, port, mode):
         self.__serial = serial
         self.__port = port
+        self.test_mode = mode
 
     def run(self, send_data):
         try:
-            self.__serial.write(serial.to_bytes(send_data))
+            if self.test_mode:
+                pass
+            else:
+                self.__serial.write(serial.to_bytes(send_data))
             # pass
             # self.__serial.write(bytearray(send_data))
             # self.__serial.write(result.encode('utf-8'))

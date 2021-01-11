@@ -27,6 +27,8 @@ Description: Logitech Joystick key reader
 12 / 04 크루즈 모드 추가 및 조종기 버그 수정
 
 12 / 15 X-Box 조종기 모드 추가 및 파라미터 변경
+
+01 / 11 BETAFPV 조종기 모드 추가
 *********************************************
 """
 
@@ -69,20 +71,22 @@ class JoystickReader(object):
     STEER_RATIO = 0.8
     STEER_LIMIT = 32700 # 32000  
 
-    def __init__(self, serial, port):
+    def __init__(self, serial, port, mode):
 
         self.__serial = serial
         self.__port = port
+        self.__test_mode = mode
         self.__num_buttons = None
         self.__num_axes = None
         self.__jsdev = None
         self.__fn = '/dev/input/js0'
-        self.__writer = UMDSerialWriter(serial=self.__serial, port=self.__port)
+        self.__writer = UMDSerialWriter(serial=self.__serial, port=self.__port, mode=self.__test_mode)
         self.__pt = PacketProtocol()
         self.__ESTOP = 'OFF'
         self.__GEAR = 'GNEUTRAL'
         self.__WHEEL = 'WFORWARD'
 
+        self.isXbox = False
         self.__isConnect_joy = True
         self.__isThread = False
         self.__isCruise = False
@@ -101,11 +105,13 @@ class JoystickReader(object):
         self.pre_accel_val = 0
 
         self.cruise_val = 0
+
         self.__aps_val = self.APS_VAL
         self.current_val = self.accel_val + self.__aps_val
         self.speed_val = self.accel_val + self.__aps_val
 
         self.condition = Condition()
+
 
     # joystick connection checking
     def joy_check(self):
@@ -134,12 +140,14 @@ class JoystickReader(object):
         buf = array.array('B', [0] * 64)
         ioctl(self.__jsdev, 0x80006a13 +
               (0x10000 * len(buf)), buf)  # JSIOCGNAME(len)
-        js_name = buf.tobytes().rstrip(b'\x00').decode('utf-8')  # 0x00 비어있는 값 제거
-        print('Device name: %s' % js_name)
+        self.__js_name = buf.tobytes().rstrip(b'\x00').decode('utf-8')  # 0x00 비어있는 값 제거
+        print('Device name: %s' % self.__js_name)
 
-        if "Microsoft" in js_name:
+        if "Microsoft" in self.__js_name or "Generic" in self.__js_name:
+            self.isXbox = True
             return True
-        elif "Generic" in js_name:
+        elif "BetaFPV" in self.__js_name:
+            self.isXbox = False
             return True
         else:
             return False
@@ -214,7 +222,6 @@ class JoystickReader(object):
                         self.current_val = self.current_val - self.DELTA_MINUS
                     elif self.__GEAR == 'GBACKWARD':
                         self.current_val = self.current_val - (self.DELTA_MINUS * 3)                   
-                                        # 액셀 최댓값 설정 (60000)
                     else:
                         self.current_val = 0
                     if self.current_val < 0:
@@ -230,17 +237,12 @@ class JoystickReader(object):
             # 쓰레드 잠김 해제
             self.condition.release()
 
-
     def sendpacket_thread(self):
-
         try:
             control_t = Thread(target=self.control_thread)
             control_t.daemon = True
             control_t.start()
             while True:        
-                # alive count (0 ~ 255)
-                # send packet
-
                 if self.__isConnect_joy:
                     self.__pt.count_alive()
 
@@ -315,6 +317,15 @@ class JoystickReader(object):
         self.steer_value  = [0x00, 0x00]
         self.exp_value  = [0x00, 0x00]
 
+        self.axis_states = {}
+        self.button_states = {}
+        self.axis_map = []
+        self.button_map = []
+        self.origin_axis_states = {}
+        self.origin_button_states = {}
+        self.origin_axis_map = []
+        self.origin_button_map = []
+
     def joy_main_event(self):
         # Main event loop
         # 키 이벤트 처리
@@ -338,7 +349,10 @@ class JoystickReader(object):
                         # 시간, 값, 타입, 번호 등으로 가져옴
                         _, value, type, number = struct.unpack(
                             'IhBB', evbuf)
+                        
+                    self.APS_VAL = JoystickReader.APS_VAL if self.isXbox else 0
 
+                    if self.isXbox:
                         # type이 0x01 버튼이 눌렸거나 떨어졌을때이다.
                         if type & 0x01:
                             # number 값으로 해당 버튼 이름 가져오기
@@ -394,31 +408,17 @@ class JoystickReader(object):
                                 elif result_button == 'WBACKWARD':
                                     self.__WHEEL = 'WBACKWARD'
 
-                         # type이 0x02이면 축이 이동한 상태이다.
+                        # type이 0x02이면 축이 이동한 상태이다.
                         if type & 0x02:
                             # number로 해당 축의 이름 가져오기
                             axis = self.axis_map[number]                            
                             # excel
                             if axis == 'z':
-                                """
-                                값을 32767로 나눠서 0 또는 1, -1 로 표시
-                                축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
-                                0보다 큰지 작은지 0인지를 구분하기 위함이다.
-                                상태값(0, 1, -1)을 저장
-                                0 ~ 65534
-                                """
                                 self.accel_val = int((value + 32767) * self.ACCEL_RATIO)  
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
 
                             # brake
                             if axis == 'rz':
-                                """
-                                값을 32767로 나눠서 0 또는 1, -1 로 표시
-                                축 값이 -32767 ~ 0 ~ 32767 사이 값으로 표시되는 데
-                                0보다 큰지 작은지 0인지를 구분하기 위함이다.
-                                상태값(0, 1, -1)을 저장
-                                0 ~ 65534
-                                """
                                 self.brake_val = int(value) + 32767
                                 # print("%s: %.3f \t" % (axis, axis_val), end="")
                                 # self.brake_value = self.brake_val.to_bytes(2, byteorder="little", signed=False)
@@ -442,7 +442,48 @@ class JoystickReader(object):
                                 axis_val = int(value) / 32767
                                 if axis_val:
                                     self.__GEAR = 'GNEUTRAL'
-
+                    else:
+                        if type & 0x02:
+                            axis = self.axis_map[number]
+                            # excel or brake
+                            if axis == 'z':
+                                if value > 0:
+                                    self.accel_val = int(value * self.ACCEL_RATIO) 
+                                elif value < 0:
+                                    self.brake_val = int(value) + 65534
+                                else:
+                                    self.accel_val = 0
+                                    self.brake_val = 0
+                            # steer
+                            elif axis == 'x':
+                                self.steer_val = int(value)  
+                                # if abs(self.steer_val) < 1000:
+                                #     self.steer_val = 0
+                            # Gear
+                            elif axis == 'rz':
+                                axis_val = int(value) / 32767
+                                if axis_val == -1.0:
+                                    self.__GEAR = 'GFORWARD'
+                                elif axis_val == 1.0:
+                                    self.__GEAR = 'GBACKWARD'
+                                elif axis_val == 0.0:
+                                    self.__GEAR = 'GNEUTRAL'
+                            # Estop
+                            elif axis == 'ry':
+                                axis_val = int(value) / 32767
+                                if axis_val == -1.0:
+                                    self.__ESTOP = 'ON'
+                                else:
+                                    self.__ESTOP = 'OFF'
+                            # Wheel Mode
+                            elif axis == 'trottle':
+                                axis_val = int(value) / 32767
+                                if axis_val == -1.0:
+                                    self.__WHEEL = 'WFORWARD'
+                                elif axis_val == 0:
+                                    self.__WHEEL = 'WFOURTH'
+                                elif axis_val == 1.0:
+                                    self.__WHEEL = 'WBACKWARD'
                 # 조이스틱 연결이 끊어지면 재 연결 시도
                 except OSError:
                     self.reconect()
@@ -455,63 +496,11 @@ class JoystickReader(object):
                 except KeyboardInterrupt:
                     t.join()
                     print(" ctrl + c pressed !!")
-                    print("exit .. ")
                     exit(0)
 
         except (KeyboardInterrupt, SystemExit):
             print ('\n! Received keyboard interrupt, quitting threads.\n')
             exit(0)
-
-    # def steer_fitting(self, data):
-
-    #     result_data = data 
-
-    #     if self.pre_exp_data != result_data:
-    #         # 현재 값이 이전 값보다 클 경우
-    #         if self.pre_exp_data < result_data:
-    #             result_data = data / self.STEER_LIMIT
-    #             # steer 값이 양수일 때
-    #             if data >= 0:
-    #                 # 현재 데이터 보정 (STEER RATIO 까지 완만하게 증가)
-    #                 if result_data <= self.STEER_RATIO:
-    #                     result_data = (1/self.STEER_RATIO) * result_data * result_data
-    #                     result_data = int(result_data * self.STEER_LIMIT)
-    #                 # 이후에는 현재 데이터 이용 
-    #                 else:
-    #                     result_data = int(result_data * self.STEER_LIMIT)
-    #             # steer 값이 음수일 때
-    #             else:
-    #                 # 현재 데이터 보정 (STEER RATIO-1 까지 완만하게 감소)
-    #                 if result_data <= self.STEER_RATIO - 1:
-    #                     result_data = (1/self.STEER_RATIO) * (result_data + 1) * (result_data + 1) - 1
-    #                     result_data = int(result_data * self.STEER_LIMIT)
-    #                 else:
-    #                     result_data = int(result_data * self.STEER_LIMIT)
-    #         # 현재 값이 이전 값보다 작을 경우
-    #         elif self.pre_exp_data >= result_data:
-    #             # steer 값이 양수 일 때
-    #             result_data = data / self.STEER_LIMIT
-    #             if data >= 0:
-    #                 # 현재 데이터 보정 ( 1 - STEER RATIO 까지 완만하게 감소)
-    #                 if result_data >= (1 - self.STEER_RATIO):
-    #                     result_data = (-1/self.STEER_RATIO) * (result_data - 1) * (result_data - 1) + 1
-    #                     result_data = int(result_data * self.STEER_LIMIT)
-    #                 else:
-    #                     result_data = int(result_data * self.STEER_LIMIT)
-    #             else:
-    #                 # 현재 데이터 보정 ( -STEER RATIO 까지 완만하게 증가)
-    #                 if result_data >= -self.STEER_RATIO:
-    #                     result_data = (-1/self.STEER_RATIO) * result_data * result_data
-    #                     result_data = int(result_data * self.STEER_LIMIT)
-    #                 else:
-    #                     result_data = int(result_data * self.STEER_LIMIT)
-    #         self.pre_exp_data = result_data
-    #     else:
-    #         result_data = int(data)
-        
-    #     # 1의 자리 버림
-    #     result_data = (result_data // 10) * 10
-    #     return result_data
 
     def limitAPS(self):
         if self.__aps_val < self.APS_VAL:
@@ -565,12 +554,18 @@ class JoystickReader(object):
             # self.isConnect_joy = False
             print("조이스틱을 재 연결합니다.")
             print('Opening %s...' % self.__fn)
+            self.isXbox = False
             self.__jsdev = open(self.__fn, 'rb')
 
-            if self.__jsdev:
-                print("조이스틱 체크 성공")
-                self.__isConnect_joy = True
+            self.joy_open()
+            isCorrect = self.joy_name_read()
+            if isCorrect:
 
+            # if self.__jsdev:
+                # self.joy_name_read()
+                self.axis_read()
+                self.button_read()
+                self.__isConnect_joy = True
         except:
             self.__isConnect_joy = False
             print("조이스틱을 다시 연결하세요..")
