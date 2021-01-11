@@ -43,7 +43,6 @@ from .names import axis_names, button_names
 from .protocol import PacketProtocol
 from src.ums_serial.writer import UMDSerialWriter
 
-
 class JoystickReader(object):
 
     axis_states = {}
@@ -111,7 +110,6 @@ class JoystickReader(object):
         self.speed_val = self.accel_val + self.__aps_val
 
         self.condition = Condition()
-
 
     # joystick connection checking
     def joy_check(self):
@@ -366,11 +364,6 @@ class JoystickReader(object):
                                 # print(result_button)
                                 if button == 'mode':
                                     self.__ESTOP = 'ON'
-
-                                if button == 'start':
-                                    self.__isCruise = True
-                                    # self.__initCruise = True
-                                    self.cruise_val = self.speed_val
 
                                 if button == 'start':
                                     self.__isCruise = True
