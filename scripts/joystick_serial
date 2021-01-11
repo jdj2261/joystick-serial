@@ -17,7 +17,25 @@ from umd_serial import UMDSerial
 def main():
     print ("joystick serial v 1.0.0")
 
-    us = UMDSerial()
+    str = """
+    Commands:
+        python3 umd_serial.py -t True
+    """
+    if len(sys.argv) == 1:
+        mode = False
+    else:
+        if sys.argv[1] == '-h':
+            print(str)
+            exit()
+        elif sys.argv[1] == '-t':
+            if sys.argv[2] == "True":
+                mode = True
+            else:
+                mode = False
+    # print(sys.argv[2])
+    # print(mode)
+    us = UMDSerial(mode)
+
     us.waitPort()
 
 if __name__ == '__main__':
