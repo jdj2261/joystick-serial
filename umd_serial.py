@@ -15,14 +15,15 @@ Description: Serial and Joystick Connection
 
 class UMDSerial():
     port_name = "/dev/serial0"
-    test_mode = False
 
-    def __init__(self):
+
+    def __init__(self, mode):
         self.__serial = None
         self.__writer = None
         self.__joyreader = None
         self.__is_serial_connect = False
         self.__is_joy_connect = False
+        self.test_mode = mode
 
     def waitPort(self):
 
@@ -72,7 +73,26 @@ class UMDSerial():
             time.sleep(0.2)
 
 if __name__ == "__main__":
-    us = UMDSerial()
+
+    str = """
+    Commands:
+        python3 umd_serial.py -t True
+    """
+    if len(sys.argv) == 1:
+        mode = False
+    else:
+        if sys.argv[1] == '-h':
+            print(str)
+            exit()
+        elif sys.argv[1] == '-t':
+            if sys.argv[2] == "True":
+                mode = True
+            else:
+                mode = False
+    # print(sys.argv[2])
+    # print(mode)
+    us = UMDSerial(mode)
+
     us.waitPort()
 
         

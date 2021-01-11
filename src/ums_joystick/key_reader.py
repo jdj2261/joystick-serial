@@ -285,7 +285,9 @@ class JoystickReader(object):
                     # print("speed_val : {0} ".format(self.speed_val), end=" ")
                     # print("steer_val : {0} ".format(self.steer_val), end=" ")
                     # print("fitting_steer_val : {0} ".format(self.exp_val), end=" ")
-                    # print("packet : {0}".format(packet))
+                    if self.__test_mode:
+                        print("packet : {0}".format(packet))
+                        
                     self.__writer.run(packet)
 
                 else:
