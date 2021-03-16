@@ -452,8 +452,8 @@ class JoystickReader(object):
                             # steer
                             elif axis == 'x':
                                 self.steer_val = int(value)  
-                                # if abs(self.steer_val) < 1000:
-                                #     self.steer_val = 0
+                                if abs(self.steer_val) < 1500:
+                                    self.steer_val = 0
                             # Gear
                             elif axis == 'rz':
                                 axis_val = int(value) / 32767
