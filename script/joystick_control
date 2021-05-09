@@ -1,0 +1,35 @@
+#!/usr/bin/python
+#-*-coding:utf-8-*-
+
+'''
+@ Created Date: May 15. 2020
+@ Updated Date: May 03. 2021  
+@ Author: Dae Jong Jin 
+@ Description: excute joystick_serial package
+'''
+
+import sys, os
+import git
+import argparse
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+from src.xbox_control import XboxControl
+
+def show_tag_version() -> None:
+    repo = git.Repo('../')
+    tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
+    tag_version = tags[-1]
+    print(f"Latest tag version : {tag_version}")
+
+def get_mode() -> bool:
+    parser = argparse.ArgumentParser(description="split non-test or test program")
+    parser.add_argument('--test','-t', dest='test', action='store_true', help='python3 umd_serial.py --test')
+    args = parser.parse_args()
+    mode = args.test
+    return mode
+
+def main():
+    show_tag_version()
+    XboxControl(get_mode()).start()
+
+if __name__ == '__main__':
+    main()

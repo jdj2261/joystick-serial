@@ -1,4 +1,4 @@
-# JOYSTICK SERIAL****
+# JOYSTICK SERIAL
 
 [TOC]
 
@@ -98,8 +98,4 @@ $ python3 umd_serial.py
 
 
 
-### 4. 업데이트 내역
-
-1. APS 모드추가 
-
-2. 종방향, 횡방향(2차함수 적용) 제어
+2. 
