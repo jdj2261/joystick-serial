@@ -20,6 +20,8 @@ class UmsSerial:
         self.device = None
         self._serial = serial.Serial(baudrate=baudrate, timeout=timeout)
         self.testmode = testmode
+        # TODO 
+        # testmode
 
     def __repr__(self) -> str:
         return "<{cls}>".format(cls=self.__class__.__name__)
@@ -81,7 +83,6 @@ class UmsSerial:
         return self._serial.readline()
 
 if __name__ == "__main__":
-
     port_name = "/dev/ttyACM0"
     baudrate = 9600
     timeout = 0.1

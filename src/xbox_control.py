@@ -11,86 +11,118 @@
 import time
 import sys, os
 sys.path.append(os.path.dirname(__file__))
-from threading import Thread
 
 from ums_xbox.xbox import Xbox 
+from ums_xbox.protocol import Packet
+from ums_xbox.names import Param
 from ums_serial.ums_serial import UmsSerial
 
 # dev_port = "/dev/serial0"
 class XboxControl:
     def __init__(self, port_name, baudrate, timeout, testmode):
         self.ums_ser = UmsSerial(port_name, baudrate, timeout, testmode)
+        self.xbox = Xbox(0)
+        self.packet = Packet()
 
     def __repr__(self) -> str:
         return "<{cls}>".format(cls=self.__class__.__name__)
     
     def __call__(self):
-        return self.execute()
+        return self.exec()
 
-    def execute(self):
-        xbox = Xbox(0)
-        xbox.start()
+    def exec(self):
+        self.xbox.start()
+        self._main_loop()
+
+    def _main_loop(self):
         while True:
             try:
                 if self.ums_ser.connect():
-                    print("connected")
-                    self.ums_ser.write(0x01)
-            except Exception :
+                    self._send_xbox_data()
+            except OSError as e :
                 self.ums_ser.disconnect()
             time.sleep(0.5)
     
-        # self.connect_port()
-        # self.read_data()
+    def _send_xbox_data(self):
+        while True:
+            if self.xbox.is_connect:
+                self.packet.alive = self._active_count(self.packet.alive)
+                self._control_accel()
 
-#     def connect_port(self):
-#         is_connected_port = False
-#         while True:
-#             is_connected_port = self.open_port() if not self.mode else True
-#             if is_connected_port:
-#                 print("시리얼 연결이 되었습니다.")
-#                 break
-#             print("시리얼 연결이 되었는지 확인해 주세요.")
-#             time.sleep(0.2)
+                accel_val, brake_val, steer_val = self._convert_bytes(
+                        self.xbox.current_accel_data,
+                        self.xbox.brake_data,
+                        self.xbox.steer_data
+                )
 
-#     def open_port(self):
-#         try:
-#             self.serial = serial.Serial(
-#                 port=dev_port,
-#                 baudrate=9600,
-#             )
-#         except:
-#             print(' 포트를 여는 데 실패했습니다.')
-#             return False
-#         return True
+                self.packet.accel_data[1] = accel_val[1]
+                self.packet.brake_data[0] = brake_val[0]
+                self.packet.brake_data[1] = brake_val[1]
+                self.packet.steer_data[0] = steer_val[0]
+                self.packet.steer_data[1] = steer_val[1]
+                # TODO
+                # packet.steer_data[2] = exp_value[0]
+                # packet.steer_data[3] = exp_value[1] 
 
-#     def read_data(self):
-#         xbox = Xbox(serial=self.serial, port=dev_port, mode=self.mode)
-#         while True:
-#             xbox.connect_joystick()
-#             isXbox = xbox.read_joystic_name()
-#             if isXbox:
-#                 xbox.read_axises()
-#                 xbox.read_buttons()
-#                 xbox.joy_main_event()
-#                 break
-#             else:
-#                 print(" \n 조이스틱을 다시 연결해 주세요")
-#                 xbox.connect_joystick()
-#             time.sleep(0.2)
+                send_packet = self.packet.makepacket(
+                            estop = self.xbox.pushed_estop, 
+                            gear = self.xbox.gear_data,
+                            wheel = self.xbox.pushed_wheel)
 
-def test():
+                print(f"{self.xbox.is_cruise}\t{send_packet}")
+                self.ums_ser.write(send_packet)
+
+                self.xbox.pre_accel_data = self.xbox.accel_data
+                time.sleep(0.02)
+            else:
+                pass
+
+    def _control_accel(self):
+        self.xbox.limit_aps_data()
+
+        if self.xbox.accel_data != 0 :
+            self.xbox.is_cruise = False
+        if self.xbox.accel_data < 0 :
+            self.xbox.accel_data = 0
+        elif self.xbox.accel_data !=0:
+            self.xbox.cruise_accel_data = Param.APS_INIT_VAL
+
+        if self.xbox.brake_data != 0 or \
+            self.xbox.pushed_estop == 'ESTOP_ON' or \
+            self.xbox.gear_data == 'GEAR_N': 
+            self.xbox.accel_data = 0
+            self.xbox.current_accel_data = 0
+            self.xbox.result_accel_data = 0
+
+        if self.xbox.current_accel_data < Param.APS_INIT_VAL:
+            self.xbox.current_accel_data = Param.APS_INIT_VAL
+        self.xbox.prevent_accel()
+
+        if self.xbox.brake_data == 0:
+            self.xbox.choose_accel_mode()
+
+    def _active_count(self, data: int) -> int:
+        data += 1
+        if data >= 256: data = 0
+        return data
+
+    def _convert_bytes(self, accel, brake, steer):
+        ret_accel = accel.to_bytes(
+            2, byteorder="little", signed=False)
+        ret_brake = brake.to_bytes(
+            2, byteorder="little", signed=False)
+        ret_steer = steer.to_bytes(
+            2, byteorder="little", signed=True)
+
+        return ret_accel, ret_brake, ret_steer
+
+def main():
     port_name = "/dev/ttyACM0"
     baudrate = 9600
     timeout = 0.1
     testmode = True
     xc = XboxControl(port_name, baudrate, timeout, testmode)
-    xc.start()
-    # main loop
-
-    # mode = False if len(sys.argv) <= 1 else True
-    # XboxControl(mode).start()
+    xc.exec()
 
 if __name__ == "__main__":
-    test()
-
-        
+    main()

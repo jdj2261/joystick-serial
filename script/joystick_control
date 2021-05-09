@@ -29,7 +29,11 @@ def get_mode() -> bool:
 
 def main():
     show_tag_version()
-    XboxControl(get_mode()).start()
+    port_name = "/dev/ttyACM0"
+    baudrate = 9600
+    timeout = 0.1
+    testmode = get_mode()
+    XboxControl(port_name, baudrate, timeout, testmode).exec()
 
 if __name__ == '__main__':
     main()

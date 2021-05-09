@@ -14,9 +14,8 @@ import threading
 import time
 from threading import Thread
 
-from fcntl import ioctl
+from fcntl import I_PUSH, ioctl
 from collections import namedtuple
-
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from ums_xbox.names import *
@@ -35,6 +34,7 @@ class Xbox(threading.Thread):
         threading.Thread.__init__(self)
         self.is_connect = False
         self.is_cruise = False
+        self.is_thread = True
         self.index = index
         self._dev_file = None
         self.daemon = True
@@ -51,7 +51,9 @@ class Xbox(threading.Thread):
         self.pre_accel_data = 0
         self.current_accel_data = self.accel_data + Param.APS_INIT_VAL
         self.result_accel_data = self.current_accel_data
-        
+        self.cruise_accel_data = 0
+        self.aps_accel_data = Param.APS_INIT_VAL
+
         self.brake_data = 0
         self.steer_data = 0
         self.gear_data = 'GEAR_N'
@@ -78,8 +80,7 @@ class Xbox(threading.Thread):
                 self._correct_current_accel()
 
     def _control_increase_accel(self):
-        # TODO
-        # cruise 
+        self.is_thread = True
         while self.current_accel_data <= self.accel_data:
             if self.gear_data == 'GEAR_D':
                 self._increase_based_on_threshold()
@@ -91,6 +92,7 @@ class Xbox(threading.Thread):
             time.sleep(0.02)
 
     def _control_decrease_accel(self):
+        self.is_thread = True
         while self.current_accel_data >= self.accel_data:
             if self.gear_data == 'GEAR_D':
                 self.current_accel_data -= Param.DECREASE_VAL
@@ -120,6 +122,19 @@ class Xbox(threading.Thread):
     def _limit_min_current_accel(self):
         if self.current_accel_data < 0:
             self.current_accel_data = self.accel_data + Param.APS_INIT_VAL
+
+    def _limit_cruise_data(self):
+        if self.cruise_accel_data < self.aps_accel_data:
+            self.cruise_accel_data = self.aps_accel_data
+        
+        if self.cruise_accel_data > Param.MAX_ACCEL_VAL:
+            self.cruise_accel_data = Param.MAX_ACCEL_VAL
+
+    def limit_aps_data(self):
+        if self.aps_accel_data < Param.APS_INIT_VAL:
+            self.aps_accel_data = Param.APS_INIT_VAL
+        elif self.aps_accel_data > Param.MAX_ACCEL_VAL:
+            self.aps_accel_data = Param.MAX_ACCEL_VAL
 
     def connect(self) -> bool:
         while True:
@@ -208,9 +223,10 @@ class Xbox(threading.Thread):
 
     def _process_event(self, event: ControllerEvent):
         button, axis = None, None
-        if event.type == Joy.JS_EVENT_BUTTON:
+        if event.type == Joy.JS_EVENT_BUTTON and event.value:
             button = self._button_event(event)
-            self._convert_button(button)
+            self._convert_button(event, button)
+            self._set_cruise_accel_data()
         if event.type == Joy.JS_EVENT_AXIS:
             axis = self._axis_event(event)
             self._convert_axis(axis)
@@ -227,7 +243,7 @@ class Xbox(threading.Thread):
         axis = Axis.axis_redefine.get(axis, None)
         return axis
 
-    def _convert_button(self, button):
+    def _convert_button(self, event, button):
         if button == 'WHEEL_REAR':
             self.pushed_wheel = button
         if button == 'WHEEL_ALL':
@@ -247,23 +263,37 @@ class Xbox(threading.Thread):
     def _change_cruise_mode(self):
         if self.pushed_cruise:
             self.is_cruise = True
-        if self.brake_data != 0 or \
-            self.accel_data != 0 or \
+
+        if self.accel_data != 0 or \
             self.pushed_gear == 'GEAR_N' or \
             self.gear_data == 'ESTOP_ON':
 
             self.is_cruise = False
             self.pushed_cruise = None
-        # print(self.pushed_gear, self.is_cruise)
+        # print(self.accel_data, self.is_cruise)
 
-    def prevent_accel(self):
-        if self.brake_data == 0:
+    def _set_cruise_accel_data(self):
+        if self.is_thread:
+            self.cruise_accel_data = self.result_accel_data
+            self.is_thread = False 
+        else:
+            if self.pushed_cruise == 'CRUISE_DOWN':
+                self.cruise_accel_data -= int(Param.CRUISE_VAL / 2)
+            if self.pushed_cruise == 'CRUISE_UP':
+                self.cruise_accel_data += Param.CRUISE_VAL
+        self._limit_cruise_data()
+
+    def choose_accel_mode(self):
+        if self.is_cruise:
+            self.current_accel_data = self.cruise_accel_data
+            self.result_accel_data = self.cruise_accel_data
+        else:
             self.result_accel_data = self.current_accel_data
 
+    def prevent_accel(self):
         if self.brake_data != 0 or \
             self.pushed_estop == 'ESTOP_ON' or \
             self.gear_data == 'GEAR_N': 
-            self.accel_data = 0
             self.current_accel_data = 0
             self.result_accel_data = 0
 
@@ -341,10 +371,28 @@ def main():
         if xbox.is_connect:
             packet.alive = active_count(packet.alive)
 
+            xbox.limit_aps_data()
+            if xbox.accel_data != 0 :
+                xbox.is_cruise = False
+            if xbox.accel_data < 0 :
+                xbox.accel_data = 0
+            elif xbox.accel_data !=0:
+                xbox.cruise_accel_data = Param.APS_INIT_VAL
+
             if xbox.current_accel_data < Param.APS_INIT_VAL:
                 xbox.current_accel_data = Param.APS_INIT_VAL
 
-            xbox.prevent_accel()
+            if xbox.brake_data != 0 or \
+                xbox.pushed_estop == 'ESTOP_ON' or \
+                xbox.gear_data == 'GEAR_N': 
+                xbox.cruise_accel_data = Param.APS_INIT_VAL
+                xbox.current_accel_data = 0
+                xbox.result_accel_data = 0
+                xbox.aps_accel_data = 0
+             
+            if xbox.brake_data == 0:
+                xbox.choose_accel_mode()
+            
             accel_value = xbox.current_accel_data.to_bytes(
                 2, byteorder="little", signed=False)
             brake_value = xbox.brake_data.to_bytes(
@@ -366,8 +414,8 @@ def main():
                 gear = xbox.gear_data,
                 wheel = xbox.pushed_wheel)
 
-            print(f"{xbox.is_cruise}\t{send_packet}")
-            print(f"{xbox.current_accel_data}")
+            print(f"{xbox.is_thread}\t{xbox.is_cruise}\t{send_packet}")
+            # print(f"{xbox.current_accel_data}")
             xbox.pre_accel_data = xbox.accel_data
 
             time.sleep(0.02)
