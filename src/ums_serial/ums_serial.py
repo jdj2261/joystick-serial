@@ -15,13 +15,10 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from exception.exception import PortNotOpenError
 
 class UmsSerial:
-    def __init__(self, port: str, baudrate: int, timeout: float, testmode=False):
+    def __init__(self, port: str, baudrate: int, timeout: float):
         self.port = port
         self.device = None
         self._serial = serial.Serial(baudrate=baudrate, timeout=timeout)
-        self.testmode = testmode
-        # TODO 
-        # testmode
 
     def __repr__(self) -> str:
         return "<{cls}>".format(cls=self.__class__.__name__)
@@ -81,22 +78,3 @@ class UmsSerial:
     @property
     def readline(self):
         return self._serial.readline()
-
-if __name__ == "__main__":
-    port_name = "/dev/ttyACM0"
-    baudrate = 9600
-    timeout = 0.1
-    testmode = True
-
-    ums_ser = UmsSerial(port_name, baudrate, timeout, testmode)
-
-    # main loop
-    while True:
-        try:
-            if ums_ser.connect():
-                print("connected")
-                ums_ser.write(0x01)
-        except Exception as e:
-            ums_ser.disconnect()
-        time.sleep(0.5)
-    

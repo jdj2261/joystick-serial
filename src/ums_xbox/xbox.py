@@ -5,37 +5,32 @@
 @ Created Date: May 15. 2020
 @ Updated Date: May 03. 2021  
 @ Author: Dae Jong Jin 
-@ Description: TODO
+@ Description: Read Xbox data and Convert to serial data
 '''
 import sys, os
 import struct
 import array
 import threading
 import time
-from threading import Thread
 
-from fcntl import I_PUSH, ioctl
+from threading import Thread
+from fcntl import ioctl
 from collections import namedtuple
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from ums_xbox.names import *
-from ums_xbox.protocol import Packet
 
-ControllerEvent = namedtuple("Event", ["time", "type", "number", "value", "is_init"])
-
-# TODO
-def available(joystickNumber = 0):
-    """Check if a joystick is connected and ready to use."""
-    joystickPath = '/dev/input/js' + str(joystickNumber)
-    return os.path.exists(joystickPath)
+ControllerEvent = namedtuple("Event", ["time", "value", "type", "number", "is_init"])
 
 class Xbox(threading.Thread):
-    def __init__(self, index=0):
+    def __init__(self, index=0, deadzone=0.05):
         threading.Thread.__init__(self)
+        self.index = index
+        self.deadzone = deadzone
+        
         self.is_connect = False
         self.is_cruise = False
         self.is_thread = True
-        self.index = index
         self._dev_file = None
         self.daemon = True
 
@@ -55,22 +50,23 @@ class Xbox(threading.Thread):
         self.aps_accel_data = Param.APS_INIT_VAL
 
         self.brake_data = 0
-        self.steer_data = 0
+        self.steer_raw_data = 0
+        self.steer_modified_data = 0
         self.gear_data = 'GEAR_N'
 
     def __repr__(self) -> str:
         return "<{cls}>".format(cls=self.__class__.__name__)
 
     def run(self):
-        accel_thread = Thread(target=self.control_accel_thread)
+        accel_thread = Thread(target=self._control_accel_thread)
         accel_thread.daemon = True
         accel_thread.start()
 
         while True:
             if self.connect():
-                self.event_loop()
+                self._event_loop()
 
-    def control_accel_thread(self):
+    def _control_accel_thread(self):
         while True:
             if self.pre_accel_data < self.accel_data:
                 self._control_increase_accel()
@@ -135,6 +131,24 @@ class Xbox(threading.Thread):
             self.aps_accel_data = Param.APS_INIT_VAL
         elif self.aps_accel_data > Param.MAX_ACCEL_VAL:
             self.aps_accel_data = Param.MAX_ACCEL_VAL
+    
+    def limit_accel_data(self):
+        if self.accel_data != 0 :
+            self.is_cruise = False
+        if self.accel_data < 0 :
+            self.accel_data = 0
+
+        if self.accel_data != 0:
+            self.cruise_accel_data = Param.APS_INIT_VAL
+
+        if self.current_accel_data < Param.APS_INIT_VAL:
+            self.current_accel_data = Param.APS_INIT_VAL
+
+    def limit_steer_data(self):
+        if self.steer_raw_data > Param.LIMIT_STEER_VAL:
+            self.steer_raw_data = Param.LIMIT_STEER_VAL
+        if self.steer_raw_data < -Param.LIMIT_STEER_VAL:
+            self.steer_raw_data = -Param.LIMIT_STEER_VAL
 
     def connect(self) -> bool:
         while True:
@@ -153,7 +167,7 @@ class Xbox(threading.Thread):
         except FileNotFoundError:
             self.is_connect = False
             print(f"controller device with index {self.index} was not found!")
-            self.reset_data()
+            self._reset_data()
             time.sleep(2)
 
     @property
@@ -195,7 +209,7 @@ class Xbox(threading.Thread):
                 buttons_map.append(btn_name)
         return buttons_map
 
-    def event_loop(self):
+    def _event_loop(self):
         while True:
             event = self._get_event()
             if event is None: break
@@ -215,11 +229,10 @@ class Xbox(threading.Thread):
             return
         else:
             if buf:
-                time_, value, type_, number = struct.unpack("IhBB", buf)
+                time_, value_, type_, number_ = struct.unpack("IhBB", buf)
                 is_init = bool(type_ & Joy.JS_EVENT_INIT)
                 return ControllerEvent(
-                    time=time_, type=type_, number=number, value=value, is_init=is_init
-                )
+                    time=time_, value=value_, type=type_, number=number_, is_init=is_init)
 
     def _process_event(self, event: ControllerEvent):
         button, axis = None, None
@@ -296,6 +309,7 @@ class Xbox(threading.Thread):
             self.gear_data == 'GEAR_N': 
             self.current_accel_data = 0
             self.result_accel_data = 0
+            self.cruise_accel_data = Param.APS_INIT_VAL
 
     def _convert_axis(self, axis):
         if axis == 'ACCEL':
@@ -313,7 +327,7 @@ class Xbox(threading.Thread):
     def _get_axis_data(self, event):
         self._get_accel_data(event)
         self._get_brake_data(event)
-        self._get_steer_data(event)
+        self._get_steer_raw_data(event)
         self._get_gear_data(event)
 
     def _get_accel_data(self, event):
@@ -324,13 +338,22 @@ class Xbox(threading.Thread):
         if event.number == 5 and self.pushed_brake:
             self.brake_data = event.value + 32767
 
-    def _get_steer_data(self, event):
+    def _get_steer_raw_data(self, event):
         if event.number == 3 and self.pushed_steer:
-            self.steer_data = event.value
-        # TODO
-        # DEADZONE 
-        # https://github.com/ros-drivers/joystick_drivers/blob/main/joy/src/joy_node.cpp)
-        
+            self.steer_raw_data = event.value
+            roun_down_steer_data = (self.steer_raw_data // 10 ) * 10
+            self.steer_modified_data = self._dz_steer_data(roun_down_steer_data)
+
+    def _dz_steer_data(self, data: int) -> int:
+        unscaled_deadzone = int(32767 * self.deadzone)
+        if data > unscaled_deadzone:
+            data -= unscaled_deadzone
+        elif data < -unscaled_deadzone:
+            data += unscaled_deadzone
+        else:
+            data = 0
+        return data
+
     def _get_gear_data(self, event):
         if event.number == 6:
             self.gear_data = 'GEAR_N'
@@ -341,7 +364,7 @@ class Xbox(threading.Thread):
             if event.value == -32767:
                 self.gear_data = 'GEAR_D'
 
-    def reset_data(self):
+    def _reset_data(self):
         self.pushed_wheel = 'WHEEL_ALL'
         self.pushed_estop = 'ESTOP_OFF'
 
@@ -355,73 +378,5 @@ class Xbox(threading.Thread):
 
         self.accel_data = 0
         self.brake_data = 0
-        self.steer_data = 0
+        self.steer_raw_data = 0
         self.gear_data = 'GEAR_N'
-
-def active_count(data: int) -> int:
-    data += 1
-    if data >= 256: data = 0
-    return data
-
-def main():
-    xbox = Xbox(0)
-    xbox.start()
-    packet = Packet()
-    while True:
-        if xbox.is_connect:
-            packet.alive = active_count(packet.alive)
-
-            xbox.limit_aps_data()
-            if xbox.accel_data != 0 :
-                xbox.is_cruise = False
-            if xbox.accel_data < 0 :
-                xbox.accel_data = 0
-            elif xbox.accel_data !=0:
-                xbox.cruise_accel_data = Param.APS_INIT_VAL
-
-            if xbox.current_accel_data < Param.APS_INIT_VAL:
-                xbox.current_accel_data = Param.APS_INIT_VAL
-
-            if xbox.brake_data != 0 or \
-                xbox.pushed_estop == 'ESTOP_ON' or \
-                xbox.gear_data == 'GEAR_N': 
-                xbox.cruise_accel_data = Param.APS_INIT_VAL
-                xbox.current_accel_data = 0
-                xbox.result_accel_data = 0
-                xbox.aps_accel_data = 0
-             
-            if xbox.brake_data == 0:
-                xbox.choose_accel_mode()
-            
-            accel_value = xbox.current_accel_data.to_bytes(
-                2, byteorder="little", signed=False)
-            brake_value = xbox.brake_data.to_bytes(
-                2, byteorder="little", signed=False)
-            steer_value = xbox.steer_data.to_bytes(
-                2, byteorder="little", signed=True)
-
-            packet.accel_data[1] = accel_value[1]
-            packet.brake_data[0] = brake_value[0]
-            packet.brake_data[1] = brake_value[1]
-            packet.steer_data[0] = steer_value[0]
-            packet.steer_data[1] = steer_value[1]
-            # TODO
-            # packet.steer_data[2] = exp_value[0]
-            # packet.steer_data[3] = exp_value[1]
-
-            send_packet = packet.makepacket(
-                estop = xbox.pushed_estop, 
-                gear = xbox.gear_data,
-                wheel = xbox.pushed_wheel)
-
-            print(f"{xbox.is_thread}\t{xbox.is_cruise}\t{send_packet}")
-            # print(f"{xbox.current_accel_data}")
-            xbox.pre_accel_data = xbox.accel_data
-
-            time.sleep(0.02)
-        else:
-            pass
-
-
-if __name__ == "__main__":
-    main()

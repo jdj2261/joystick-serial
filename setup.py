@@ -13,12 +13,12 @@ from setuptools import find_packages, setup, Command
 
 # Package meta-data.
 NAME = 'joystick-serial'
-DESCRIPTION = 'My short description for my project.'
+DESCRIPTION = 'This is Xbox Control for sending Shuttle Manual driving data'
 URL = 'https://github.com/djjin/joystick-serial'
 EMAIL = 'wlseoeo@gmail.com'
-AUTHOR = 'Awesome Soul'
+AUTHOR = 'Daejong Jin'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '1.0.1'
+VERSION = '2.0.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [

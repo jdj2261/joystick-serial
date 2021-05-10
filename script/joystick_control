@@ -33,7 +33,8 @@ def main():
     baudrate = 9600
     timeout = 0.1
     testmode = get_mode()
-    XboxControl(port_name, baudrate, timeout, testmode).exec()
+    deadzone = 0.05
+    XboxControl(port_name, baudrate, timeout, testmode, deadzone).exec()
 
 if __name__ == '__main__':
     main()

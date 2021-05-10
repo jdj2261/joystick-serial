@@ -5,7 +5,7 @@
 @ Created Date: May 15. 2020
 @ Updated Date: May  4. 2021
 @ Author: Dae Jong Jin 
-@ Description: Xbox joystick axis, button name
+@ Description: Xbox axises and buttons name, Parameters
 '''
 
 class Joy:
@@ -54,7 +54,6 @@ class Axis(Joy):
         'hat0x': 'GEAR_N', # Gear N
         'hat0y': 'GEAR_D_R', # Gear D, R
     }
-
 
 class Button(Joy):
     def __init__(self):
