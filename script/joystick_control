@@ -28,8 +28,8 @@ def get_mode() -> bool:
     return mode
 
 def main():
-    show_tag_version()
-    port_name = "/dev/ttyACM0"
+    # show_tag_version()
+    port_name = "/dev/ttyAMA0" #"/dev/ttyACM0"
     baudrate = 9600
     timeout = 0.1
     testmode = get_mode()
