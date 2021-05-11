@@ -22,7 +22,7 @@ def show_tag_version() -> None:
 
 def get_mode() -> bool:
     parser = argparse.ArgumentParser(description="split non-test or test program")
-    parser.add_argument('--test','-t', dest='test', action='store_true', help='python3 umd_serial.py --test')
+    parser.add_argument('--test','-t', dest='test', action='store_true', help='./joystick_control -t')
     args = parser.parse_args()
     mode = args.test
     return mode
