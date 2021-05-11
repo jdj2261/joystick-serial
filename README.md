@@ -30,21 +30,14 @@ $ ./joystick_control -t
 
 ## Example
 
->  If the xbox controller is connected, it looks like this.
+<left> If the xbox controller is connected, it looks like this.</left>
+<left><img src="doc/joystick_execute.png"></left>
 
-<img src="doc/joystick_execute.png"  align='left' alt="image-jostick-execute"/>
+<left> If it is in test mode, it looks like this.</left>
+<left><img src="doc/joystick_test.png"></left>
 
-
-
->  If it is in test mode, it looks like this.
-
-<img src="doc/joystick_test.png" align="left" alt="image-joystick_test"/>
-
-
-
-> If the xbox controller is disconnected and reconnected, it looks like this.
-
-<img src="doc/not_connected_joystick.png" align='left' alt="image-not_connected_joystick"  />
+<left> If the xbox controller is disconnected and reconnected, it looks like this.</left>
+<left><img src="doc/not_connected_joystick.png"></left>
 
 
 
