@@ -1,4 +1,4 @@
-# joystick-serial
+joystick-serial
 
 This package is for serial communication by connecting a joystick to the Raspberry Pi 3.
 
@@ -30,28 +30,28 @@ $ ./joystick_control -t
 
 ## Example
 
-- If the xbox controller is connected, it looks like this.
+>  If the xbox controller is connected, it looks like this.
 
-> <img src="doc/joystick_execute.png"  align='left' alt="image-jostick-execute"/>
+<img src="doc/joystick_execute.png"  align='left' alt="image-jostick-execute"/>
 
-```html
-<p float="left">
-  <img src="doc/joystick_execute.png" width="100" />
-  <img src="doc/joystick_test.png" width="100" /> 
-  <img src="doc/not_connected_joystick.png" width="100" />
-</p>
-```
 
-- If it is in test mode, it looks like this.
 
-> <img src="doc/joystick_test.png" align="left" alt="image-joystick_test"/>
+>  If it is in test mode, it looks like this.
 
-- If the xbox controller is disconnected and reconnected, it looks like this.
+<img src="doc/joystick_test.png" align="left" alt="image-joystick_test"/>
 
-> <img src="doc/not_connected_joystick.png" align='left' alt="image-not_connected_joystick"  />
+
+
+> If the xbox controller is disconnected and reconnected, it looks like this.
+
+<img src="doc/not_connected_joystick.png" align='left' alt="image-not_connected_joystick"  />
+
+
 
 ## Operation Manual
 
-> <img src="doc/operation_manual1.png" alt="image-20210511135124181" align="left" style="zoom:60%;" />
+<img src="doc/operation_manual1.png" alt="image-20210511135124181" style="zoom:60%;" />
 
-> <img src="doc/operation_manual2.png" alt="image-operation_manual2" align="left" style="zoom:60%;" />
+
+
+<img src="doc/operation_manual2.png" alt="image-operation_manual2" style="zoom:60%;" />
