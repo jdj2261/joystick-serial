@@ -34,7 +34,13 @@ $ ./joystick_control -t
 
 > <img src="doc/joystick_execute.png"  align='left' alt="image-jostick-execute"/>
 
-
+```html
+<p float="left">
+  <img src="doc/joystick_execute.png" width="100" />
+  <img src="doc/joystick_test.png" width="100" /> 
+  <img src="doc/not_connected_joystick.png" width="100" />
+</p>
+```
 
 - If it is in test mode, it looks like this.
 
