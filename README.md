@@ -1,56 +1,50 @@
-# JOYSTICK SERIAL
+# joystick-serial
 
 This package is for serial communication by connecting a joystick to the Raspberry Pi 3.
 
-This is a package used to control the Unmmaned Solution Shuttle(With:US).
+It is a package used to control the Unmmaned Solution Shuttle, With:US.
 
 ![top](http://www.unmansol.com/images/sub02/top.jpg)
 
-## Protocol
+## Install
 
-Data ordering : Little Endian
+### Pip Install
 
-Data Transfer Rate : 50Hz (0.02 ms) 
+~~~
+$ pip install gitpython
+~~~
 
+## Run
 
+~~~
+$ cd script
+$ ./joystick_control
+~~~
 
-## Package
+If you only want to check the joystick data, Run it like this.
 
-### 1) ums_joystick
+~~~
+$ cd scirpt
+$ ./joystick_control -t
+~~~
 
-- names.py
-  - joystick's buttons, axises dictionary
-- protocol.py
-  - packet's elements definition
-- key_reader.py
-  - joystick connection check & event process
+## Example
 
-### 2) ums_serial
+- If the xbox controller is connected, it looks like this.
 
-- reader.py
-  - Undefined
-- writer.py
-  - Serial Write (Type : bytes)
+<img src="doc/joystick_execute.png"  align='left' alt="image-jostick-execute"/>
 
+- If it is in test mode, it looks like this.
 
+<img src="doc/joystick_test.png" align="left" alt="image-joystick_test"/>
 
-## Main
+- If the xbox controller is disconnected and reconnected, it looks like this.
 
-### umd_serial.py
+<img src="doc/not_connected_joystick.png" align='left' alt="image-not_connected_joystick"  />
 
-- main
-- Serial connection check, Serial process
+## Operation Manual
 
+<img src="doc/operation_manual1.png" alt="image-20210511135124181" align="left" style="zoom:60%;" />
 
-
-## EXECUTION
-
-```
-$ cd scripts
-$ python3 joystick_serial
-
-or
-
-$ python3 umd_serial.py
-```
+<img src="doc/operation_manual2.png" alt="image-operation_manual2" align="left" style="zoom:60%;" />
 

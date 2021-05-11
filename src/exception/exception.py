@@ -3,7 +3,7 @@
 '''
 @ Created Date: May 3. 2021
 @ Author: Dae Jong Jin 
-@ Description: Custom exception class
+@ Description: Custom exception
 '''
 # This is not used, but it is easy to degug.
 # so create and use it if necessary.
