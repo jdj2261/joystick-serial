@@ -1,12 +1,10 @@
 # JOYSTICK SERIAL
 
-
-
-## Description
-
 This package is for serial communication by connecting a joystick to the Raspberry Pi 3.
 
+This is a package used to control the Unmmaned Solution Shuttle(With:US).
 
+![top](http://www.unmansol.com/images/sub02/top.jpg)
 
 ## Protocol
 
@@ -55,5 +53,4 @@ or
 
 $ python3 umd_serial.py
 ```
-
 

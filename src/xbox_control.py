@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 '''
 @ Created Date: May 15. 2020
 @ Updated Date: May 03. 2021  
@@ -36,12 +35,13 @@ class XboxControl:
     def _main_loop(self):
         while True:
             try:
-                if self.ums_ser.connect():
+                if self.ums_ser.connect(self.is_testmode):
                     self._send_xbox_data()
-            except OSError as e :
+            except OSError as e:
+                print(e)
                 self.ums_ser.disconnect()
             time.sleep(0.5)
-    
+
     def _send_xbox_data(self):
         while True:
             if self.xbox.is_connect:
@@ -81,10 +81,12 @@ class XboxControl:
         self.xbox.limit_aps_data()
         self.xbox.limit_accel_data()
         self.xbox.limit_steer_data()
-        self.xbox.prevent_accel()
+        self.xbox.initialize_accel()
 
-        if self.xbox.brake_data == 0:
-            self.xbox.choose_accel_mode()
+        if self.xbox.accel_data != 0: 
+            self.xbox.release_cruise_mode()
+        if self.xbox.brake_data == 0: 
+            self.xbox.choose_cruise_mode()
 
     def _active_count(self, data: int) -> int:
         data += 1
@@ -104,12 +106,12 @@ class XboxControl:
         return ret_accel, ret_brake, ret_raw_steer, ret_modified_steer
 
 def main():
-    port_name = "/dev/ttyACM0"
+    port_name = "/dev/ttyAMA0"
     baudrate = 9600
     timeout = 0.1
     testmode = True
     deadzone = 0.05
-    xc = XboxControl(port_name, baudrate, timeout, testmode)
+    xc = XboxControl(port_name, baudrate, timeout, testmode, deadzone)
     xc.exec()
 
 if __name__ == "__main__":

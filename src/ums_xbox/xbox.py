@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 '''
 @ Created Date: May 15. 2020
 @ Updated Date: May 03. 2021  
@@ -63,7 +62,7 @@ class Xbox(threading.Thread):
         accel_thread.start()
 
         while True:
-            if self.connect():
+            if self._connect():
                 self._event_loop()
 
     def _control_accel_thread(self):
@@ -74,6 +73,33 @@ class Xbox(threading.Thread):
                 self._control_decrease_accel()
             else:
                 self._correct_current_accel()
+
+    def _connect(self) -> bool:
+        while True:
+            if not self._open(): continue
+            if self._is_xbox(): break
+        self.axis = self._get_axis()
+        self.buttons = self._get_buttons()
+        return True
+
+    def _event_loop(self):
+        while True:
+            event = self._get_event()
+            if event is None: break
+            if event is not None and not event.is_init:
+                self._process_event(event)
+                
+    def _open(self) -> bool:
+        try:
+            print('Opening %s...' % self._get_dev_file)
+            self._dev_file = open(self._get_dev_file, 'rb')
+            self.is_connect = True
+            return True
+        except FileNotFoundError:
+            self.is_connect = False
+            print(f"controller device with index {self.index} was not found!")
+            self._reset_data()
+            time.sleep(2)
 
     def _control_increase_accel(self):
         self.is_thread = True
@@ -122,25 +148,17 @@ class Xbox(threading.Thread):
     def _limit_cruise_data(self):
         if self.cruise_accel_data < self.aps_accel_data:
             self.cruise_accel_data = self.aps_accel_data
-        
         if self.cruise_accel_data > Param.MAX_ACCEL_VAL:
             self.cruise_accel_data = Param.MAX_ACCEL_VAL
 
     def limit_aps_data(self):
         if self.aps_accel_data < Param.APS_INIT_VAL:
             self.aps_accel_data = Param.APS_INIT_VAL
-        elif self.aps_accel_data > Param.MAX_ACCEL_VAL:
+        if self.aps_accel_data > Param.MAX_ACCEL_VAL:
             self.aps_accel_data = Param.MAX_ACCEL_VAL
-    
+
     def limit_accel_data(self):
-        if self.accel_data != 0 :
-            self.is_cruise = False
-        if self.accel_data < 0 :
-            self.accel_data = 0
-
-        if self.accel_data != 0:
-            self.cruise_accel_data = Param.APS_INIT_VAL
-
+        if self.accel_data < 0 : self.accel_data = 0
         if self.current_accel_data < Param.APS_INIT_VAL:
             self.current_accel_data = Param.APS_INIT_VAL
 
@@ -150,25 +168,24 @@ class Xbox(threading.Thread):
         if self.steer_raw_data < -Param.LIMIT_STEER_VAL:
             self.steer_raw_data = -Param.LIMIT_STEER_VAL
 
-    def connect(self) -> bool:
-        while True:
-            if not self._open(): continue
-            if self._is_xbox(): break
-        self.axis = self._get_axis()
-        self.buttons = self._get_buttons()
-        return True
+    def release_cruise_mode(self):
+        self.is_cruise = False
+        self.cruise_accel_data = Param.APS_INIT_VAL
 
-    def _open(self) -> bool:
-        try:
-            print('Opening %s...' % self._get_dev_file)
-            self._dev_file = open(self._get_dev_file, 'rb')
-            self.is_connect = True
-            return True
-        except FileNotFoundError:
-            self.is_connect = False
-            print(f"controller device with index {self.index} was not found!")
-            self._reset_data()
-            time.sleep(2)
+    def initialize_accel(self):
+        if self.brake_data != 0 or \
+            self.pushed_estop == 'ESTOP_ON' or \
+            self.gear_data == 'GEAR_N': 
+            self.current_accel_data = 0
+            self.result_accel_data = 0
+            self.cruise_accel_data = Param.APS_INIT_VAL
+
+    def choose_cruise_mode(self):
+        if self.is_cruise:
+            self.current_accel_data = self.cruise_accel_data
+            self.result_accel_data = self.cruise_accel_data
+        else:
+            self.result_accel_data = self.current_accel_data
 
     @property
     def _get_dev_file(self) -> str:
@@ -208,13 +225,6 @@ class Xbox(threading.Thread):
             if btn_name is not None:
                 buttons_map.append(btn_name)
         return buttons_map
-
-    def _event_loop(self):
-        while True:
-            event = self._get_event()
-            if event is None: break
-            if event is not None and not event.is_init:
-                self._process_event(event)
 
     def _get_event(self) -> ControllerEvent:
         try:
@@ -257,25 +267,17 @@ class Xbox(threading.Thread):
         return axis
 
     def _convert_button(self, event, button):
-        if button == 'WHEEL_REAR':
-            self.pushed_wheel = button
-        if button == 'WHEEL_ALL':
-            self.pushed_wheel = button
-        if button == 'WHEEL_FRONT':
-            self.pushed_wheel = button
-        if button == 'ESTOP_OFF':
-            self.pushed_estop = button
-        if button == 'ESTOP_ON':
-            self.pushed_estop = button
-        if button == 'CRUISE_DOWN':
-            self.pushed_cruise = button
-        if button == 'CRUISE_UP':
-            self.pushed_cruise = button
+        if button == 'WHEEL_REAR':  self.pushed_wheel = button
+        if button == 'WHEEL_ALL':   self.pushed_wheel = button
+        if button == 'WHEEL_FRONT': self.pushed_wheel = button
+        if button == 'ESTOP_OFF':   self.pushed_estop = button
+        if button == 'ESTOP_ON':    self.pushed_estop = button
+        if button == 'CRUISE_DOWN': self.pushed_cruise = button
+        if button == 'CRUISE_UP':   self.pushed_cruise = button
         # print(self.pushed_wheel, self.pushed_estop, self.pushed_cruise) 
 
     def _change_cruise_mode(self):
-        if self.pushed_cruise:
-            self.is_cruise = True
+        if self.pushed_cruise:  self.is_cruise = True
 
         if self.accel_data != 0 or \
             self.pushed_gear == 'GEAR_N' or \
@@ -296,32 +298,12 @@ class Xbox(threading.Thread):
                 self.cruise_accel_data += Param.CRUISE_VAL
         self._limit_cruise_data()
 
-    def choose_accel_mode(self):
-        if self.is_cruise:
-            self.current_accel_data = self.cruise_accel_data
-            self.result_accel_data = self.cruise_accel_data
-        else:
-            self.result_accel_data = self.current_accel_data
-
-    def prevent_accel(self):
-        if self.brake_data != 0 or \
-            self.pushed_estop == 'ESTOP_ON' or \
-            self.gear_data == 'GEAR_N': 
-            self.current_accel_data = 0
-            self.result_accel_data = 0
-            self.cruise_accel_data = Param.APS_INIT_VAL
-
     def _convert_axis(self, axis):
-        if axis == 'ACCEL':
-            self.pushed_accel = axis
-        if axis == 'STEER':
-            self.pushed_steer = axis
-        if axis == 'BRAKE':
-            self.pushed_brake = axis
-        if axis == 'GEAR_N':
-            self.pushed_gear = axis
-        if axis == 'GEAR_D_R':
-            self.pushed_gear = axis       
+        if axis == 'ACCEL':     self.pushed_accel = axis
+        if axis == 'STEER':     self.pushed_steer = axis
+        if axis == 'BRAKE':     self.pushed_brake = axis
+        if axis == 'GEAR_N':    self.pushed_gear = axis
+        if axis == 'GEAR_D_R':  self.pushed_gear = axis       
         # print(self.pushed_accel, self.pushed_steer, self.pushed_brake, self.pushed_gear) 
 
     def _get_axis_data(self, event):
@@ -355,19 +337,17 @@ class Xbox(threading.Thread):
         return data
 
     def _get_gear_data(self, event):
-        if event.number == 6:
-            self.gear_data = 'GEAR_N'
+        if event.number == 6:   self.gear_data = 'GEAR_N'
 
         if event.number == 7 :
-            if event.value == 32767:
+            if event.value == 32767:    
                 self.gear_data = 'GEAR_R' 
-            if event.value == -32767:
+            if event.value == -32767:   
                 self.gear_data = 'GEAR_D'
 
     def _reset_data(self):
         self.pushed_wheel = 'WHEEL_ALL'
         self.pushed_estop = 'ESTOP_OFF'
-
         self.pushed_gear = None
         self.pushed_cruise = None
         self.pushed_accel = None

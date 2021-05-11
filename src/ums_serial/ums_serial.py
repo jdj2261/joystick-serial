@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 '''
 @ Created Date: May 15. 2020
 @ Updated Date: May  4. 2021
@@ -8,11 +7,13 @@
 @ Description: Serial Communication
 '''
 
-import serial, serial.tools.list_ports
 import time
 import sys, os
-sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-from exception.exception import PortNotOpenError
+import serial, serial.tools.list_ports
+from serial.serialutil import SerialException
+
+dir_path = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(dir_path))
 
 class UmsSerial:
     def __init__(self, port: str, baudrate: int, timeout: float):
@@ -29,7 +30,10 @@ class UmsSerial:
     def __exit__(self, *args, **kwargs):
         self.disconnect()
     
-    def connect(self) -> bool:
+    def connect(self, test_mode) -> bool:
+        if test_mode:
+            return True
+            
         while not self._serial.isOpen():
             ports = self.find_comports()
             for port in ports:
@@ -37,8 +41,8 @@ class UmsSerial:
                     self._serial.port = self.port
             try:
                 self._serial.open()
-            except Exception as e:
-                print("checking serial port...")
+            except SerialException as e:
+                print(e)
                 time.sleep(1)
 
         if self._serial.isOpen():
