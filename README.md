@@ -30,13 +30,16 @@ $ ./joystick_control -t
 
 ## Example
 
-<left> If the xbox controller is connected, it looks like this.</left>
+If the xbox controller is connected, it looks like this.
+
 <left><img src="doc/joystick_execute.png"></left>
 
-<left> If it is connected in test mode, it looks like this.</left>
+If it is connected in test mode, it looks like this.
+
 <left><img src="doc/joystick_test.png"></left>
 
-<left> If the xbox controller is disconnected and reconnected, it looks like this.</left>
+If the xbox controller is disconnected and reconnected, it looks like this.
+
 <left><img src="doc/not_connected_joystick.png"></left>
 
 
@@ -48,3 +51,4 @@ $ ./joystick_control -t
 
 
 <img src="doc/operation_manual2.png" alt="image-operation_manual2" style="zoom:60%;" />
+
