@@ -95,9 +95,9 @@ class Xbox(threading.Thread):
             self._dev_file = open(self._get_dev_file, 'rb')
             self.is_connect = True
             return True
-        except FileNotFoundError:
+        except (FileNotFoundError, PermissionError) as e:
             self.is_connect = False
-            print(f"controller device with index {self.index} was not found!")
+            print(f"Exception : {e}, controller device with index {self.index} was not found!")
             self._reset_data()
             time.sleep(2)
 
