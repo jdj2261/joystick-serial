@@ -16,10 +16,10 @@ from ums_xbox.protocol import Packet
 from ums_serial.ums_serial import UmsSerial
 
 class XboxControl:
-    def __init__(self, port_name, baudrate, timeout, testmode, daedzone):
+    def __init__(self, port_name, baudrate, timeout, testmode, deadzone):
         self.is_testmode = testmode
         self.ums_ser = UmsSerial(port_name, baudrate, timeout)
-        self.xbox = Xbox(index=0, deadzone=daedzone)
+        self.xbox = Xbox(index=0, deadzone=deadzone)
         self.packet = Packet()
 
     def __repr__(self) -> str:
